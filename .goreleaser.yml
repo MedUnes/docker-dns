@@ -1,0 +1,11 @@
+builds:
+- env:
+    - CGO_ENABLED=0
+  mod_timestamp: '{{ .CommitTimestamp }}'
+  flags:
+    - -trimpath
+  ignore:
+    - goos: freebsd
+    - goos: windows
+    - goos: linux
+    - goos: darwin
