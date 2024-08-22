@@ -5,31 +5,17 @@ on:
     workflows: ["Tests"]
     types:
       - completed
+  push:
+    tags:
+      - 'v*'
+
 jobs:
-  tag:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      repository-projects: write
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: '0'
-      - name: Minor version for each merge
-        id: AutoTagger
-        uses: anothrNick/github-tag-action@1.36.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WITH_V: true
-    
   release:
-    if: github.event.workflow_run.conclusion == 'success'
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
@@ -40,5 +26,4 @@ jobs:
           version: latest
           args: release --rm-dist
         env:
-          # GitHub sets this automatically
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
