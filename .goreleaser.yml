@@ -1,11 +1,14 @@
 builds:
-- env:
-    - CGO_ENABLED=0
-  mod_timestamp: '{{ .CommitTimestamp }}'
-  flags:
-    - -trimpath
-  ignore:
-    - goos: freebsd
-    - goos: windows
-    - goos: linux
-    - goos: darwin
+  - env:
+      - CGO_ENABLED=0
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
+    # Specify targets for multiple OS and arch combinations
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
