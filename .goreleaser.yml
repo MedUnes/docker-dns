@@ -31,5 +31,5 @@ archives:
 
 release:
   github:
-    owner: MedUnes
+    owner: medunes
     name: docker-dns
