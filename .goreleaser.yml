@@ -1,10 +1,15 @@
+# .goreleaser.yml example configuration
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+
 builds:
   - env:
       - CGO_ENABLED=0
     mod_timestamp: '{{ .CommitTimestamp }}'
     flags:
       - -trimpath
-    # Specify targets for multiple OS and arch combinations
     goos:
       - linux
       - windows
@@ -12,3 +17,19 @@ builds:
     goarch:
       - amd64
       - arm64
+    binaries:
+      - name: docker-dns
+        goos: linux
+        goarch: amd64
+
+archives:
+  - name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    format: tar.gz
+    files:
+      - LICENSE
+      - README.md
+
+release:
+  github:
+    owner: MedUnes
+    name: docker-dns
