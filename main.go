@@ -15,10 +15,10 @@ import (
 )
 
 var (
-	port       = flag.String("port", "5335", "Port on which the DNS server will listen")
-	tld        = flag.String("tld", "docker", "Top-level domain for container DNS resolution")
-	ttl = flag.Int("ttl", 300, "Time-to-live for DNS cache entries in seconds")
-	help       = flag.Bool("help", false, "Display help and usage information")
+	port = flag.String("port", "5335", "Port on which the DNS server will listen")
+	tld  = flag.String("tld", "docker", "Top-level domain for container DNS resolution")
+	ttl  = flag.Int("ttl", 300, "Time-to-live for DNS cache entries in seconds")
+	help = flag.Bool("help", false, "Display help and usage information")
 )
 
 var dnsCache = struct {
