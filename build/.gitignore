@@ -1,0 +1,3 @@
+docker-dns
+!etc/docker-dns/docker-dns.conf
+*.deb

@@ -1,0 +1,17 @@
+#!/bin/bash
+
+PATH=$PATH:/bin:/usr/bin:/sbin/:/usr/sbin
+SERVICE_NAME=docker-dns
+
+case $1 in
+install|upgrade)
+
+    if [[ "$( ps -p 1 -o comm=)" != "systemd" ]]; then
+      echo "Failed to detect systemd, aborting installation"
+    exit 1;
+    fi
+    echo "Found a running instance of "${SERVICE_NAME}.service", stopping.."
+    systemctl stop "${SERVICE_NAME}.service"
+    setcap CAP_NET_BIND_SERVICE=+eip /usr/bin/${SERVICE_NAME}
+    ;;
+esac

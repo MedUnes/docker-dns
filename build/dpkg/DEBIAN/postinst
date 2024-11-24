@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#postinst
+PATH=$PATH:/bin:/usr/bin:/sbin/:/usr/sbin
+SERVICE_NAME=docker-dns
+
+case $1 in
+configure)
+  if [[ "$( ps -p 1 -o comm=)" != "systemd" ]]; then
+    echo "Failed to detect systemd, aborting installation"
+    exit 1;
+  fi
+    systemctl daemon-reload
+    systemctl start "${SERVICE_NAME}.service"
+    systemctl enable "${SERVICE_NAME}.service"
+    ;;
+esac

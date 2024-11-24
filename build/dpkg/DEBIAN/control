@@ -1,0 +1,9 @@
+Package: docker-dns
+Version: __VERSION__
+Section: custom
+Priority: optional
+Architecture: all
+Essential: no
+Installed-Size: 1024
+Maintainer: medunes <medunes@protonmail.com>
+Description: Docker container name to IP DNS Server
