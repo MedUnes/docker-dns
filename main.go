@@ -15,11 +15,11 @@ import (
 )
 
 var (
-	port        = flag.String("port", "5335", "Port on which the DNS server will listen")
-	tld         = flag.String("tld", "docker", "Top-level domain for container DNS resolution")
-	ttl         = flag.Int("ttl", 300, "Time-to-live for DNS cache entries in seconds")
-	help        = flag.Bool("help", false, "Display help and usage information")
-	resolvers   = flag.String("default-resolver", "1.1.1.1,8.8.8.8,9.9.9.9", "Comma-separated list of fallback DNS resolvers")
+	ip        = flag.String("ip", "127.0.0.153", "IP address on which the DNS server will listen")
+	tld       = flag.String("tld", "docker", "Top-level domain for container DNS resolution")
+	ttl       = flag.Int("ttl", 300, "Time-to-live for DNS cache entries in seconds")
+	help      = flag.Bool("help", false, "Display help and usage information")
+	resolvers = flag.String("default-resolver", "8.8.8.8,1.1.1.1,8.8.4.4", "Comma-separated list of fallback DNS resolvers")
 )
 
 var (
@@ -58,7 +58,10 @@ func handleDNSQuery(w dns.ResponseWriter, r *dns.Msg) {
 		forwardQueryToExternalDNS(&msg, domain)
 	}
 
-	w.WriteMsg(&msg)
+	err := w.WriteMsg(&msg)
+	if err != nil {
+		return
+	}
 }
 
 func forwardQueryToExternalDNS(msg *dns.Msg, domain string) {
@@ -88,14 +91,19 @@ func main() {
 	log.Printf("Using fallback DNS resolvers: %v", fallbackDNS)
 
 	dns.HandleFunc(".", handleDNSQuery)
-	server := &dns.Server{Addr: fmt.Sprintf(":%s", *port), Net: "udp"}
+	server := &dns.Server{Addr: fmt.Sprintf("%s:53", *ip), Net: "udp"}
 
-	log.Printf("Starting DNS server on port %s with TLD %s and TTL %d seconds", *port, *tld, *ttl)
+	log.Printf("Starting DNS server on ip %s with TLD %s and TTL %d seconds", *ip, *tld, *ttl)
 	err := server.ListenAndServe()
 	if err != nil {
 		log.Fatalf("Failed to start server: %s\n", err)
 	}
-	defer server.Shutdown()
+	defer func(server *dns.Server) {
+		err := server.Shutdown()
+		if err != nil {
+
+		}
+	}(server)
 }
 
 func getCachedIPs(fqdn string) ([]string, bool) {
@@ -121,7 +129,12 @@ func fetchIPsFromDocker(fqdn string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Docker client: %v", err)
 	}
-	defer cli.Close()
+	defer func(cli *client.Client) {
+		err := cli.Close()
+		if err != nil {
+
+		}
+	}(cli)
 
 	containerJSON, err := cli.ContainerInspect(context.Background(), containerName)
 	if err != nil {

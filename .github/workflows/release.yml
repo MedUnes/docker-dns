@@ -46,13 +46,3 @@ jobs:
           gh release upload "${GITHUB_REF_NAME}" ./build/dpkg/*.deb --repo "${GITHUB_REPOSITORY}"
         env:
           GITHUB_TOKEN: ${{ secrets.ACTION_SECRET }}
-      - name: Install Cloudsmith CLI
-        run: pip install --upgrade cloudsmith-cli
-      - name: Cloudsmith Uploads
-        env:
-          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          for filename in ./build/dpkg/*.deb; do
-              cloudsmith push deb medunes-fchf/docker-dns/debian/any-version $filename
-          done
