@@ -10,8 +10,10 @@ install|upgrade)
       echo "Failed to detect systemd, aborting installation"
     exit 1;
     fi
-    echo "Found a running instance of "${SERVICE_NAME}.service", stopping.."
-    systemctl stop "${SERVICE_NAME}.service"
+    if [[ "$(systemctl is-active "${SERVICE_NAME}.service")" == "active" ]]; then
+      echo "Found a running instance of "${SERVICE_NAME}.service", stopping.."
+      systemctl stop "${SERVICE_NAME}.service"
+    fi
     setcap CAP_NET_BIND_SERVICE=+eip /usr/bin/${SERVICE_NAME}
     ;;
 esac

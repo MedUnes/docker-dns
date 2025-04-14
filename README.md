@@ -21,15 +21,15 @@ A lightweight DNS server that resolves Docker container names to their IP addres
 
 1. **Download the `.deb` Package**:
    - Go to the [Releases](https://github.com/MedUnes/docker-dns/releases) page.
-   - Find the release matching your desired version (e.g., `v1.0.0`).
+   - Find the release matching your desired version (e.g., `v1.1.1`).
    - Download the `.deb` file:
      ```
-     wget https://github.com/MedUnes/docker-dns/releases/download/v1.0.0/docker-dns-1.0.0_amd64.deb
+     wget https://github.com/MedUnes/docker-dns/releases/download/v1.1.1/docker-dns-1.1.1_amd64.deb
      ```
 
 2. **Install the Package**:
    ```bash
-   sudo dpkg -i docker-dns-1.0.0_amd64.deb
+   sudo dpkg -i docker-dns-1.1.1_amd64.deb
    ```
 ### Configuration
 
@@ -120,22 +120,6 @@ A lightweight DNS server that resolves Docker container names to their IP addres
 
 ---
 
-## Important Notes
-
-### Default Resolver Integration 
-- While Docker DNS runs by default on a custom IP (not `127.0.0.1`), it is possible to use tools like `dig` to test queries: 
-  ```bash
-       dig mycontainer.docker @127.0.0.153 +short 
-  ```
-  - However, making Docker DNS the system-wide default resolver requires additional configuration or hacks.
-
-### Systemd-Resolved Compatibility**: Direct integration with `systemd-resolved` is non-trivial and not recommended without advanced setup.
-
-### Protocol
-* `docker-dns` is configured to run on `UDP` mode only, so `TCP` requests won't be answered
-
----
-
 ## Build/Run from Source
 
 ### Download built/compiled binaries:
@@ -173,7 +157,7 @@ A lightweight DNS server that resolves Docker container names to their IP addres
    -help
       Display help and usage information
    ```
-- P.S: `sudo` (or `root`) is required as the server will be  listening on port `53`, which is a [previewed port](https://www.w3.org/Daemon/User/Installation/PrivilegedPorts.html)
+- P.S: `sudo` (or `root`) is required as the server will be  listening on port `53`, which is a [Privileged Port](https://www.w3.org/Daemon/User/Installation/PrivilegedPorts.html)
 ---
 
 ## Contributing
