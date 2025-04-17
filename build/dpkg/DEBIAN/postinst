@@ -1,5 +1,4 @@
 #!/bin/bash
-# postinst for docker-dns
 
 PATH=$PATH:/bin:/usr/bin:/sbin:/usr/sbin
 SERVICE_NAME=docker-dns
@@ -13,6 +12,9 @@ get_custom_ip() {
         echo ""
     fi
 }
+
+
+setcap CAP_NET_BIND_SERVICE=+eip /usr/bin/${SERVICE_NAME}
 
 case $1 in
 configure)
