@@ -34,6 +34,12 @@ var (
 func handleDNSQuery(w dns.ResponseWriter, r *dns.Msg) {
 	msg := dns.Msg{}
 	msg.SetReply(r)
+	msg.Authoritative = true
+
+	if opt := r.IsEdns0(); opt != nil {
+		msg.SetEdns0(opt.UDPSize(), opt.Do())
+	}
+
 	domain := msg.Question[0].Name
 
 	if strings.HasSuffix(domain, fmt.Sprintf(".%s.", *tld)) {
