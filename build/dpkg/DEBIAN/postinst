@@ -12,8 +12,14 @@ get_custom_ip() {
         echo ""
     fi
 }
-
-
+get_tld() {
+    if [ -f "$CONFIG_FILE" ]; then
+        tld=$(grep '^TLD=' "$CONFIG_FILE" | head -n1 | cut -d'=' -f2)
+        echo "$tld"
+    else
+        echo ""
+    fi
+}
 setcap CAP_NET_BIND_SERVICE=+eip /usr/bin/${SERVICE_NAME}
 
 case $1 in
@@ -33,6 +39,11 @@ configure)
         echo "No 'IP' defined in ${CONFIG_FILE}. Aborting DNS configuration."
         exit 1
     fi
+    TLD=$(get_tld)
+    if [ -z "$TLD" ]; then
+        echo "No 'TLD' defined in ${TLD}. Aborting DNS configuration."
+        exit 1
+    fi
 
     if systemctl is-active systemd-resolved.service >/dev/null 2>&1; then
         echo "Detected systemd-resolved running. Extending its configuration.."
@@ -46,6 +57,8 @@ configure)
 [Resolve]
 # Prepend docker-dns IP to the DNS list.
 DNS=$CUSTOM_IP
+DNSSEC=no
+Domains=~$TLD
 EOF
         systemctl restart systemd-resolved.service
         echo "systemd-resolved extended with DNS=$CUSTOM_IP."

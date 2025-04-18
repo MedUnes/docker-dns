@@ -1,6 +1,6 @@
 module github.com/medunes/docker-dns
 
-go 1.23.0
+go 1.24.2
 
 require (
 	github.com/docker/docker v27.2.1+incompatible
