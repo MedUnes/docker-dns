@@ -53,6 +53,7 @@ configure)
             mkdir -p /etc/systemd/resolved.conf.d
         fi
         echo "Creating /etc/systemd/resolved.conf.d/docker-dns.conf.."
+        rm -rf /etc/systemd/resolved.conf.d/docker-dns.conf
         cat <<EOF >/etc/systemd/resolved.conf.d/docker-dns.conf
 [Resolve]
 # Prepend docker-dns IP to the DNS list.
@@ -60,8 +61,27 @@ DNS=$CUSTOM_IP
 DNSSEC=no
 Domains=~$TLD
 EOF
-        systemctl restart systemd-resolved.service
         echo "systemd-resolved extended with DNS=$CUSTOM_IP."
+        rm -rf /etc/NetworkManager/conf.d/99-docker-dns.conf
+        cat <<EOF >/etc/NetworkManager/conf.d/99-docker-dns.conf
+[main]
+dns=systemd-resolved
+
+[connection]
+ipv4.ignore-auto-dns=true
+ipv6.ignore-auto-dns=true
+
+ipv4.dns-priority=50
+ipv6.dns-priority=50
+EOF
+        if [ "$(readlink /etc/resolv.conf)" != "/run/systemd/resolve/stub-resolv.conf" ]; then
+          mv /etc/resolv.conf /etc/resolv.conf.old
+          rm -f /etc/resolv.conf
+          ln -s /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+        fi
+        systemctl restart systemd-resolved.service
+        sudo systemctl restart NetworkManager
+        sudo systemctl daemon-reload
     else
         echo "systemd-resolved is not active. Updating /etc/resolv.conf.."
         (cat /etc/resolv.conf | grep -q $CUSTOM_IP) && (echo "detected an entry of $CUSTOM_IP in /etc/resolv.conf, removing.." && sudo sed -i "/$CUSTOM_IP/d" "/etc/resolv.conf")
