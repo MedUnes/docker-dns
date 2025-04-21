@@ -58,5 +58,5 @@ jobs:
           CHECKSUM_FILE="./dist/checksums.txt"
           echo "Uploading updated checksum file: $CHECKSUM_FILE"
           gh release upload "${GITHUB_REF_NAME}" "$CHECKSUM_FILE" --repo "${GITHUB_REPOSITORY}" --clobber
-          env:
+        env:
           GITHUB_TOKEN: ${{ secrets.ACTION_SECRET }}
