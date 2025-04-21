@@ -45,7 +45,8 @@ jobs:
           CUR_DIR="./build/dpkg/"
           DEB_FILE=$(ls ./build/dpkg/*.deb | tail -1)
           CHECKSUM_SUFFIX="_checksum.txt"
-          sha256sum "$DEB_FILE" | sed 's,"${CUR_DIR}","",g' > "$DEB_FILE$CHECKSUM_SUFFIX"
+          sha256sum "$DEB_FILE" | sed "s#$CUR_DIR##g"
+          sha256sum "$DEB_FILE" | sed "s#$CUR_DIR##g" > "$DEB_FILE$CHECKSUM_SUFFIX"
           echo "DEB_FILE=$DEB_FILE"
           echo "DEB_CHECKSUM_FILE=$DEB_FILE$CHECKSUM_SUFFIX"
           cat "$DEB_FILE$CHECKSUM_SUFFIX"
