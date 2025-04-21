@@ -41,7 +41,8 @@ fi
 DEB_URL=$(echo "$LATEST_RELEASE_INFO" | jq -r ".assets[] | select(.name | endswith(\"$DEB_PATTERN\")) | .browser_download_url")
 
 # Extract the download URL for the checksum file using jq
-CHECKSUM_URL=$(echo "$LATEST_RELEASE_INFO" | jq -r ".assets[] | select(.name | endswith(\"$CHECKSUM_PATTERN\")) | .browser_download_url")
+CHECKSUM_SUFFIX="_checksum.txt"
+CHECKSUM_URL="$DEB_URL$CHECKSUM_SUFFIX"
 
 
 # Check if both download URLs were found

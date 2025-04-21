@@ -23,7 +23,6 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
-          # 'latest', 'nightly', or a semver
           version: '~> v2'
           args: release --clean
         env:
@@ -41,24 +40,15 @@ jobs:
           export NUMERIC_VERSION=$(echo "${{ github.ref_name }}" | sed  "s/v//g")
           echo "NUMERIC_VERSION=${NUMERIC_VERSION}" >> $GITHUB_ENV
           ./build.sh  ${{ github.repository_owner }} ${{ github.event.repository.name }} "${{ github.ref_name }}"
-      - name: Calculate and add deb checksum
-        run: |
-          DEB_FILE=$(ls ./build/dpkg/*.deb)
-          CHECKSUM_FILE="./dist/checksums.txt"
-          echo "Calculating sha256sum for $DEB_FILE..."
-          sha256sum "$DEB_FILE" >> "$CHECKSUM_FILE"
-          echo "Checksum appended to $CHECKSUM_FILE"
       - name: Upload Debian package to GitHub Release
         run: |
+          DEB_FILE=$(ls ./build/dpkg/*.deb | tail -1)
+          CHECKSUM_SUFFIX="_checksum.txt"
+          sha256sum "$DEB_FILE" >> "$DEB_FILE$CHECKSUM_SUFFIX"
+          echo "DEB_FILE=$DEB_FILE"
+          echo "DEB_CHECKSUM_FILE=$DEB_FILE$CHECKSUM_SUFFIX"
+          cat "$DEB_FILE$CHECKSUM_SUFFIX"
           gh release upload "${GITHUB_REF_NAME}" ./build/dpkg/*.deb --repo "${GITHUB_REPOSITORY}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.ACTION_SECRET }}
-      - name: Upload updated checksum file
-        run: |
-          CHECKSUM_FILE="./dist/checksums.txt"
-          VERSION=$(echo "${{ github.ref_name }}" | sed "s/v//")
-          TARGET_ASSET_NAME="docker-dns_${VERSION}_checksums.txt"
-          echo "Uploading updated checksum file: $CHECKSUM_FILE as $TARGET_ASSET_NAME"
-          gh release upload "${GITHUB_REF_NAME}" "$CHECKSUM_FILE":"$TARGET_ASSET_NAME" --repo "${GITHUB_REPOSITORY}" --clobber
+          gh release upload "${GITHUB_REF_NAME}" "$DEB_FILE$CHECKSUM_SUFFIX" --repo "${GITHUB_REPOSITORY}"
         env:
           GITHUB_TOKEN: ${{ secrets.ACTION_SECRET }}
