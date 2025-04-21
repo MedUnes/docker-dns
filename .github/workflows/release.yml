@@ -41,8 +41,22 @@ jobs:
           export NUMERIC_VERSION=$(echo "${{ github.ref_name }}" | sed  "s/v//g")
           echo "NUMERIC_VERSION=${NUMERIC_VERSION}" >> $GITHUB_ENV
           ./build.sh  ${{ github.repository_owner }} ${{ github.event.repository.name }} "${{ github.ref_name }}"
+      - name: Calculate and add deb checksum
+        run: |
+          DEB_FILE=$(ls ./build/dpkg/*.deb)
+          CHECKSUM_FILE="./dist/checksums.txt"
+          echo "Calculating sha256sum for $DEB_FILE..."
+          sha256sum "$DEB_FILE" >> "$CHECKSUM_FILE"
+          echo "Checksum appended to $CHECKSUM_FILE"
       - name: Upload Debian package to GitHub Release
         run: |
           gh release upload "${GITHUB_REF_NAME}" ./build/dpkg/*.deb --repo "${GITHUB_REPOSITORY}"
         env:
+          GITHUB_TOKEN: ${{ secrets.ACTION_SECRET }}
+      - name: Upload updated checksum file
+        run: |
+          CHECKSUM_FILE="./dist/checksums.txt"
+          echo "Uploading updated checksum file: $CHECKSUM_FILE"
+          gh release upload "${GITHUB_REF_NAME}" "$CHECKSUM_FILE" --repo "${GITHUB_REPOSITORY}" --clobber
+          env:
           GITHUB_TOKEN: ${{ secrets.ACTION_SECRET }}

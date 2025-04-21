@@ -19,12 +19,9 @@ A lightweight DNS server that resolves Docker container names to their IP addres
 
 ### Download and Install the Debian Package
 
-1. **Download the `.deb` Package**:
-   - Go to the [Releases](https://github.com/MedUnes/docker-dns/releases) page.
-   - Find the release matching your desired version (e.g., `v1.1.1`).
-   - Download the `.deb` file:
+1. **Download the latest `.deb` Package**:
      ```
-     wget https://github.com/MedUnes/docker-dns/releases/download/v1.1.1/docker-dns-1.1.1_amd64.deb
+     wget https://raw.githubusercontent.com/MedUnes/docker-dns/master/install_debian_latest.sh | bash
      ```
 
 2. **Install the Package**:
