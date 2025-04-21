@@ -56,7 +56,9 @@ jobs:
       - name: Upload updated checksum file
         run: |
           CHECKSUM_FILE="./dist/checksums.txt"
-          echo "Uploading updated checksum file: $CHECKSUM_FILE"
-          gh release upload "${GITHUB_REF_NAME}" "$CHECKSUM_FILE" --repo "${GITHUB_REPOSITORY}" --clobber
+          VERSION=$(echo "${{ github.ref_name }}" | sed "s/v//")
+          TARGET_ASSET_NAME="docker-dns_${VERSION}_checksums.txt"
+          echo "Uploading updated checksum file: $CHECKSUM_FILE as $TARGET_ASSET_NAME"
+          gh release upload "${GITHUB_REF_NAME}" "$CHECKSUM_FILE":"$TARGET_ASSET_NAME" --repo "${GITHUB_REPOSITORY}" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.ACTION_SECRET }}
