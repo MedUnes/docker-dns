@@ -42,10 +42,10 @@ jobs:
           ./build.sh  ${{ github.repository_owner }} ${{ github.event.repository.name }} "${{ github.ref_name }}"
       - name: Upload Debian package to GitHub Release
         run: |
-          DEB_FILE_FULL_PATH=$(ls ./build/dpkg/*.deb | tail -1)
-          DEB_FILE= echo "$DEB_FILE_FULL_PATH" | rev | cut -d "/" -f 1 | rev
+          CUR_DIR="./build/dpkg/"
+          DEB_FILE=$(ls ./build/dpkg/*.deb | tail -1)
           CHECKSUM_SUFFIX="_checksum.txt"
-          sha256sum "$DEB_FILE" | awk -v filename="$DEB_FILE" '{print $1, filename}' > "$DEB_FILE$CHECKSUM_SUFFIX"
+          sha256sum "$DEB_FILE" | sed 's,"${CUR_DIR}","",g' > "$DEB_FILE$CHECKSUM_SUFFIX"
           echo "DEB_FILE=$DEB_FILE"
           echo "DEB_CHECKSUM_FILE=$DEB_FILE$CHECKSUM_SUFFIX"
           cat "$DEB_FILE$CHECKSUM_SUFFIX"
