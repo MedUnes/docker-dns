@@ -35,9 +35,9 @@ esac
 if [ "$1" = "purge" ]; then
     echo "docker‑dns: rolling back DNS integration"
 
-    rm -f "$RESOLVED_DROPIN"   && restore_last resolved.conf "$RESOLVED_DROPIN"
-    rm -f "$DNSMASQ_DROPIN"    && restore_last dnsmasq "$DNSMASQ_DROPIN"
-    rm -f "$UNBOUND_DROPIN"    && restore_last unbound "$UNBOUND_DROPIN"
+    rm -f "$RESOLVED_DROPIN"
+    rm -f "$DNSMASQ_DROPIN"
+    rm -f "$UNBOUND_DROPIN"
     rm -f "$NM_DROPIN"
 
     systemctl try-restart systemd-resolved dnsmasq NetworkManager unbound || true
