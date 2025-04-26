@@ -8,8 +8,6 @@ BACKUP_DIR=/var/lib/docker-dns/backup
 STATE_DIR=/var/lib/docker-dns
 
 RESOLVED_DROPIN=/etc/systemd/resolved.conf.d/docker-dns.conf
-DNSMASQ_DROPIN=/etc/dnsmasq.d/99-docker-dns.conf
-UNBOUND_DROPIN=/etc/unbound/unbound.d/docker-dns.conf
 NM_DROPIN=/etc/NetworkManager/conf.d/90-docker-dns.conf
 
 restore_last() {
@@ -33,18 +31,16 @@ remove|purge)
 esac
 
 if [ "$1" = "purge" ]; then
-    echo "docker‑dns: rolling back DNS integration"
+    echo "docker‑dns: rolling back systemd-resolved integration"
 
     rm -f "$RESOLVED_DROPIN"
-    rm -f "$DNSMASQ_DROPIN"
-    rm -f "$UNBOUND_DROPIN"
     rm -f "$NM_DROPIN"
 
-    systemctl try-restart systemd-resolved dnsmasq NetworkManager unbound || true
+    systemctl try-restart systemd-resolved NetworkManager || true
     systemctl daemon-reload || true
 
-    if [ -L /etc/resolv.conf ]; then
-        restore_last resolv.conf /etc/resolv.conf || true
+    if [ -L "$RESOLV_CONF_FILE" ]; then
+        restore_last resolv.conf "$RESOLV_CONF_FILE" || true
     fi
 
     rm -rf "$BACKUP_DIR"

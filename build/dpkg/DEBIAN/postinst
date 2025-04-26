@@ -6,8 +6,6 @@ SERVICE=docker-dns
 DOCKER_DNS_CONFIG=/etc/docker-dns/docker-dns.conf
 BACKUP_DIR=/var/lib/docker-dns/backup
 RESOLVED_DROPIN=/etc/systemd/resolved.conf.d/docker-dns.conf
-DNSMASQ_DROPIN=/etc/dnsmasq.d/99-docker-dns.conf
-UNBOUND_DROPIN=/etc/unbound/unbound.d/docker-dns.conf
 NM_DROPIN=/etc/NetworkManager/conf.d/90-docker-dns.conf
 RESOLV_CONF_FILE=/etc/resolv.conf
 
@@ -25,42 +23,15 @@ if [ -z "$IP" ] || [ -z "$TLD" ]; then
     exit 1
 fi
 
-confirm() {
-    if [ "$DEBIAN_FRONTEND" = "noninteractive" ]; then
-        echo "noninteractive mode detected, proceeding with full integration.."
-        return 0
-    fi
-    printf "%s [y/N] " "$1"
-    read -r answer
-    [ "$answer" = "y" ] || [ "$answer" = "Y" ]
-}
-
 setcap CAP_NET_BIND_SERVICE=+eip /usr/bin/$SERVICE
 systemctl daemon-reload
 systemctl enable --now "$SERVICE.service"
 
 if systemctl is-active --quiet systemd-resolved; then
-    STACK=resolved
-elif pgrep -x dnsmasq >/dev/null; then
-    STACK=dnsmasq
-elif pgrep -x unbound >/dev/null; then
-    STACK=unbound
-else
-    STACK=plain
-fi
+    echo "docker‑dns installer detected systemd-resolved active - proceeding with integration"
 
-echo "docker‑dns installer detected resolver stack: $STACK"
+    timestamp=$(date +%s)
 
-if ! confirm "Integrate $SERVICE with $STACK resolver?"; then
-    echo "Skipped DNS integration – service still running on $IP:53"
-    echo "More Info on: https://github.com/MedUnes/docker-dns/blob/master/README.md"
-    exit 0
-fi
-
-timestamp=$(date +%s)
-
-case $STACK in
-resolved)
     [ -f "$RESOLVED_DROPIN" ] && \
         cp -a "$RESOLVED_DROPIN" "$BACKUP_DIR/resolved.conf.$timestamp"
     cat >"$RESOLVED_DROPIN" <<EOF
@@ -81,46 +52,16 @@ EOF
 
     systemctl restart systemd-resolved NetworkManager
     systemctl daemon-reload
-    ;;
 
-dnsmasq)
-    [ -f "$DNSMASQ_DROPIN" ] && \
-        cp -a "$DNSMASQ_DROPIN" "$BACKUP_DIR/dnsmasq.$timestamp"
-
-    echo "server=/$TLD/$IP" >"$DNSMASQ_DROPIN"
-    systemctl reload dnsmasq
-    systemctl daemon-reload
-    ;;
-
-unbound)
-    [ -f "$UNBOUND_DROPIN" ] && \
-        cp -a "$UNBOUND_DROPIN" "$BACKUP_DIR/unbound.$timestamp"
-
-    cat >"$UNBOUND_DROPIN" <<EOF
-local-zone: "$TLD." transparent
-stub-zone:
-    name: "$TLD."
-    stub-addr: $IP@53
-EOF
-    unbound-control reload || true
-    ;;
-
-plain)
-    cp -a "$RESOLV_CONF_FILE" "$BACKUP_DIR/resolv.conf.$timestamp"
-
-    sed -i "\|$IP|d" "$RESOLV_CONF_FILE"
-    printf 'nameserver %s\n%s' "$IP" "$(cat "$RESOLV_CONF_FILE")" >"$RESOLV_CONF_FILE"
-    ;;
-
-esac
-
-if [ "$STACK" = "resolved" ]; then
     target=/run/systemd/resolve/stub-resolv.conf
     if [ "$(readlink $RESOLV_CONF_FILE)" != "$target" ]; then
-        mv /etc/resolv.conf "$BACKUP_DIR/resolv.conf.$timestamp"
-        ln -sf "$target" $RESOLV_CONF_FILE
+        mv "$RESOLV_CONF_FILE" "$BACKUP_DIR/resolv.conf.$timestamp"
+        ln -sf "$target" "$RESOLV_CONF_FILE"
     fi
+
+    echo "docker‑dns: systemd-resolved integration completed"
+else
+    echo "Well, as you don't have systemd-resolved, I will not do any extra integration steps. docker-dns will be listening on $IP and please consider integrating it manually on-demand to your host setup (for example add it to /etc/resolv.conf)"
 fi
 
-echo "docker‑dns: integration finished."
 exit 0
