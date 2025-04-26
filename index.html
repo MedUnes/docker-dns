@@ -7,18 +7,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Fira+Code:wght@400;600&display=swap"
-          rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
     <style>
         /* Use Fira Code for headers, Inter for body */
         h1, h2, h3, h4, h5, h6 {
             font-family: 'Fira Code', monospace; /* Changed header font */
             text-shadow: 0 0 6px rgba(0, 255, 0, 0.6); /* Slightly stronger green glow */
         }
-
         body {
             font-family: 'Inter', sans-serif;
-            line-height: 1.7; /* Increased line height for readability */
+            line-height: 1.8; /* Further increased line height */
         }
 
         /* Dark theme adjustments */
@@ -31,19 +29,17 @@
         pre {
             background-color: #1a1a1a;
             border: 1px solid #006600; /* Darker green border */
-            padding: 1.25rem; /* Increased padding */
+            padding: 1.5rem; /* Increased padding */
             border-radius: 0.5rem;
             overflow-x: auto;
-            margin-top: 1rem; /* More space above */
-            margin-bottom: 1.5rem; /* More space below */
+            margin-top: 1.25rem; /* More space above */
+            margin-bottom: 2rem; /* More space below */
             color: #e5e5e5;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4); /* Subtle shadow */
         }
-
         code {
             font-family: 'Fira Code', monospace; /* Consistent monospace font */
         }
-
         /* Style for inline code */
         code:not(pre > code) {
             background-color: #282c34; /* Common editor dark background */
@@ -61,7 +57,6 @@
             border-bottom: 1px dashed rgba(97, 175, 239, 0.5); /* Dashed underline */
             transition: all 0.2s ease-in-out;
         }
-
         a:hover {
             color: #ffffff;
             border-bottom-color: #ffffff;
@@ -70,29 +65,26 @@
 
         /* Add more spacing between list items */
         ul li, ol li {
-            margin-bottom: 1rem; /* Increased spacing further */
+            margin-bottom: 1.25rem; /* Increased spacing further */
         }
-
         ul, ol {
-            padding-left: 1.5rem; /* Ensure padding for lists */
+            padding-left: 1.75rem; /* Ensure padding for lists */
         }
 
         /* Basic table styling */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 1.5rem; /* More space above table */
-            margin-bottom: 2rem; /* More space below table */
+            margin-top: 2rem; /* More space above table */
+            margin-bottom: 2.5rem; /* More space below table */
             border: 1px solid #006600;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
         }
-
         th, td {
             border: 1px solid #004d00;
-            padding: 1rem; /* Increased padding */
+            padding: 1.25rem; /* Increased padding */
             text-align: left;
         }
-
         th {
             background-color: #002a00; /* Darker green background */
             color: #00ff00;
@@ -100,33 +92,20 @@
             font-size: 0.9em;
             font-weight: 600; /* Bolder table headers */
         }
-
         td {
             background-color: #111314; /* Slightly adjusted dark background */
         }
 
         /* Adjust heading margins and colors */
         h1, h2, h3, h4, h5, h6 {
-            margin-top: 2.5em; /* More space above headers */
-            margin-bottom: 1.25em; /* More space below headers */
+            margin-top: 3em; /* More space above headers */
+            margin-bottom: 1.5em; /* More space below headers */
             color: #00ff00;
             font-weight: 600; /* Bolder headers */
         }
-
-        h1 {
-            margin-top: 0;
-            font-size: 2.8rem; /* Larger main title */
-        }
-
-        h2 {
-            font-size: 1.8rem;
-            border-bottom: 1px dashed #008000;
-            padding-bottom: 0.5em;
-        }
-
-        h3 {
-            font-size: 1.3rem;
-        }
+        h1 { margin-top: 0; font-size: 2.8rem; /* Larger main title */ }
+        h2 { font-size: 1.8rem; border-bottom: 1px dashed #008000; padding-bottom: 0.6em; } /* Increased padding */
+        h3 { font-size: 1.3rem; }
 
 
         /* Header and Footer styling */
@@ -134,176 +113,205 @@
             border-color: #006600;
             color: #b0b0b0; /* Slightly adjusted gray */
         }
-
         header {
-            padding-bottom: 2.5rem; /* More padding below header */
-            margin-bottom: 4rem; /* More space after header */
+            padding-bottom: 3rem; /* More padding below header */
+            margin-bottom: 5rem; /* More space after header */
         }
-
         header h1 {
             color: #00ff00;
         }
-
         header p {
             color: #c0c0c0; /* Brighter gray for description */
-            max-width: 80%; /* Limit width of intro text */
+            /* Max width removed for responsiveness, handled by container */
             margin-left: auto;
             margin-right: auto;
         }
-
         footer {
             color: #777; /* Dimmer gray for footer */
-            margin-top: 4rem; /* More space before footer */
-            padding-top: 2rem; /* More padding above footer */
+            margin-top: 5rem; /* More space before footer */
+            padding-top: 2.5rem; /* More padding above footer */
         }
 
         /* Section styling */
         section {
             border-left: 4px solid #005000; /* Thicker left border */
-            padding-left: 2rem; /* More padding */
-            margin-bottom: 3.5rem; /* More space between sections */
+            padding-left: 2.5rem; /* More padding */
+            margin-bottom: 4.5rem; /* More space between sections */
         }
-
         section p {
-            margin-bottom: 1.25rem; /* More space between paragraphs */
+            margin-bottom: 1.5rem; /* More space between paragraphs */
         }
 
         /* Specific element colors */
-        .text-red-700 {
-            color: #ff5555; /* Brighter red */
-        }
-
-        .text-green-700 {
-            color: #20c20e; /* Slightly different green */
-        }
-
-        .bg-blue-50 {
-            background-color: #0d1f2d;
-            border: 1px solid #1a3a5a;
-        }
-
-        /* Darker blue */
+        .text-red-700 { color: #ff5555 !important; /* Brighter red - use !important if needed */ }
+        .text-green-700 { color: #20c20e !important; /* Slightly different green - use !important if needed */ }
+        .bg-blue-50 { background-color: #0d1f2d; border: 1px solid #1a3a5a; } /* Darker blue */
 
         /* Logo styling */
         .logo {
             max-width: 180px; /* Slightly larger logo */
             filter: drop-shadow(0 0 10px rgba(0, 255, 0, 0.7)); /* Enhanced glow */
-            margin-bottom: 2rem; /* More space below logo */
+            margin-bottom: 2.5rem; /* More space below logo */
         }
 
-        /* Main container */
+        /* Main container - Responsive Padding and Max Width */
         .container {
-            padding-top: 4rem; /* More padding top */
-            padding-bottom: 4rem; /* More padding bottom */
+            padding-left: 1rem; /* Base padding for small screens */
+            padding-right: 1rem;
         }
+        /* Apply max-width and more padding on larger screens for readability */
+        @media (min-width: 640px) { /* sm breakpoint */
+            .container {
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+            }
+        }
+        @media (min-width: 1024px) { /* lg breakpoint */
+            .container {
+                max-width: 1280px; /* Reintroduce max-width for large screens (tailwind xl) */
+                padding-left: 2rem;
+                padding-right: 2rem;
+            }
+        }
+        @media (min-width: 1280px) { /* xl breakpoint */
+            .container {
+                max-width: 1536px; /* Reintroduce max-width for large screens (tailwind 2xl) */
+                padding-left: 3rem;
+                padding-right: 3rem;
+            }
+        }
+
+        /* Styling for "Why Use" section cards */
+        .why-card {
+            background-color: #111314; /* Match td background */
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            height: 100%; /* Make cards equal height in grid */
+        }
+        .why-card h3 {
+            margin-top: 0; /* Remove default top margin for card headers */
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            font-size: 1.1rem; /* Slightly smaller card titles */
+        }
+        .why-card ul {
+            padding-left: 0; /* Remove default list padding */
+            list-style: none; /* Remove default bullets */
+        }
+        .why-card li {
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: flex-start; /* Align icon with start of text */
+        }
+        .why-card li svg {
+            width: 1.1em; /* Icon size */
+            height: 1.1em;
+            margin-right: 0.6rem; /* Space between icon and text */
+            flex-shrink: 0; /* Prevent icon from shrinking */
+            margin-top: 0.2em; /* Align icon slightly better */
+        }
+        .why-card-red {
+            border: 1px solid #800000; /* Dark red border */
+        }
+        .why-card-red h3 {
+            color: #ff5555; /* Red title */
+            border-bottom: 1px dashed #ff5555;
+        }
+        .why-card-red li svg {
+            color: #ff5555; /* Red icon */
+        }
+        .why-card-green {
+            border: 1px solid #006600; /* Green border */
+        }
+        .why-card-green h3 {
+            color: #20c20e; /* Green title */
+            border-bottom: 1px dashed #20c20e;
+        }
+        .why-card-green li svg {
+            color: #20c20e; /* Green icon */
+        }
+
 
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 leading-relaxed">
-<div class="container mx-auto max-w-5xl px-6 py-16">
-    <header class="mb-16 text-center border-b pb-10"><img src="logo.png" alt="docker-dns logo"
-                                                          class="logo mx-auto block">
-        <h1 class="text-4xl font-bold mb-4">docker-dns</h1>
-        <p class="text-xl mb-6">Simplifying Docker Networking - Resolve Containers by Name</p>
-        <div class="mt-5 mb-8 flex justify-center gap-3 flex-wrap items-center">
+<div class="container mx-auto py-16 sm:py-20">
+
+    <header class="mb-16 sm:mb-20 text-center border-b pb-10 sm:pb-12 border-gray-700"> <img src="logo.png" alt="docker-dns logo" class="logo mx-auto block">
+        <h1 class="text-3xl sm:text-4xl font-bold mb-4">docker-dns</h1>
+        <p class="text-lg sm:text-xl mb-6">Simplifying Docker Networking - Resolve Containers by Name</p>
+        <div class="mt-5 mb-8 space-x-3">
             <a href="https://github.com/medunes/docker-dns/blob/master/LICENSE" target="_blank" rel="noopener noreferrer">
                 <img src="https://img.shields.io/github/license/medunes/docker-dns?style=flat-square&theme=dark" alt="GitHub license">
             </a>
             <a href="https://github.com/medunes/docker-dns/issues" target="_blank" rel="noopener noreferrer">
                 <img src="https://img.shields.io/github/issues/medunes/docker-dns?style=flat-square&theme=dark" alt="GitHub issues">
             </a>
-            <a href="https://github.com/medunes/docker-dns/stargazers" target="_blank" rel="noopener noreferrer">
-                <img src="https://img.shields.io/github/stars/medunes/docker-dns?style=flat-square&theme=dark" alt="GitHub stars">
-            </a>
         </div>
-        <p class="mt-6 text-base">Navigating the intricacies of networking in Docker environments can often feel like
-            deciphering a complex puzzle. This document provides comprehensive documentation for the docker-dns
-            project.</p></header>
+        <p class="mt-6 text-base px-4 sm:px-0">Navigating the intricacies of networking in Docker environments can often feel like deciphering a complex puzzle. This document provides comprehensive documentation for the docker-dns project.</p>
+    </header>
 
     <main>
 
         <section id="problem">
-            <h2 class="text-3xl font-semibold mb-5">The Problem: Docker Networking Challenges</h2>
-            <p>Imagine managing multiple containers, each with dynamic IP addresses. Connecting to them from your host
-                or between containers becomes cumbersome, often requiring <code>docker inspect</code> just to find an
-                IP. This challenge scales with your environment.</p>
-            <p>The core issue is the disconnect between human-readable container names and machine-level IP addresses.
-                Remembering IPs is unintuitive, host access via ports is inconvenient, and inter-container communication
-                using IPs introduces fragility.</p>
+            <h2 class="text-2xl sm:text-3xl font-semibold mb-6">The Problem: Docker Networking Challenges</h2>
+            <p>Imagine managing multiple containers, each with dynamic IP addresses. Connecting to them from your host or between containers becomes cumbersome, often requiring <code>docker inspect</code> just to find an IP. This challenge scales with your environment.</p>
+            <p>The core issue is the disconnect between human-readable container names and machine-level IP addresses. Remembering IPs is unintuitive, host access via ports is inconvenient, and inter-container communication using IPs introduces fragility.</p>
         </section>
 
         <section id="solution">
-            <h2 class="text-3xl font-semibold mb-5">The Solution: docker-dns</h2>
-            <p>docker-dns is a lightweight yet powerful DNS server engineered to streamline networking within Docker
-                environments. It acts as an intelligent translator, automatically resolving your Docker container names
-                to their respective IP addresses.</p>
-            <p>This enables seamless networking not just between containers but also between containers and your host
-                machine. Access containers using their names (e.g., <code>http://my-site.docker</code>) instead of
-                grappling with IPs, making local development feel natural and efficient. This tool is invaluable for
-                developers building and testing in Docker and DevOps engineers managing local environments.</p>
+            <h2 class="text-2xl sm:text-3xl font-semibold mb-6">The Solution: docker-dns</h2>
+            <p>docker-dns is a lightweight yet powerful DNS server engineered to streamline networking within Docker environments. It acts as an intelligent translator, automatically resolving your Docker container names to their respective IP addresses.</p>
+            <p>This enables seamless networking not just between containers but also between containers and your host machine. Access containers using their names (e.g., <code>http://my-site.docker</code>) instead of grappling with IPs, making local development feel natural and efficient. This tool is invaluable for developers building and testing in Docker and DevOps engineers managing local environments.</p>
         </section>
 
         <section id="features">
-            <h2 class="text-3xl font-semibold mb-5">Key Features</h2>
-            <p class="mb-6">docker-dns offers features designed to simplify your Docker networking:</p>
-            <ul class="list-disc list-inside space-y-4">
-                <li>
-                    <strong>Automatic DNS Resolution:</strong>
-                    <ul class="list-disc list-inside ml-8 mt-3 space-y-2">
-                        <li>Monitors Docker events (container start/stop).</li>
-                        <li>Registers container names and IPs automatically.</li>
-                        <li>Uses a custom TLD (default: <code>.docker</code>). Example: A container named
-                            <code>database</code> becomes <code>database.docker</code>.
-                        </li>
-                        <li>Access web apps easily: <code>http://my-site.docker</code> or <code>http://my-site.docker:3000</code>.
-                        </li>
-                        <li>Eliminates manual IP tracking and <code>/etc/hosts</code> edits by dynamically updating DNS
-                            records.
-                        </li>
-                    </ul>
-                </li>
+            <h2 class="text-2xl sm:text-3xl font-semibold mb-6">Key Features</h2>
+            <p class="mb-8">docker-dns offers features designed to simplify your Docker networking:</p>
+            <ul class="list-disc list-inside space-y-5"> <li>
+                <strong>Automatic DNS Resolution:</strong>
+                <ul class="list-disc list-inside ml-6 sm:ml-8 mt-4 space-y-3"> <li>Monitors Docker events (container start/stop).</li>
+                    <li>Registers container names and IPs automatically.</li>
+                    <li>Uses a custom TLD (default: <code>.docker</code>). Example: A container named <code>database</code> becomes <code>database.docker</code>.</li>
+                    <li>Access web apps easily: <code>http://my-site.docker</code> or <code>http://my-site.docker:3000</code>.</li>
+                    <li>Eliminates manual IP tracking and <code>/etc/hosts</code> edits by dynamically updating DNS records.</li>
+                </ul>
+            </li>
                 <li>
                     <strong>Caching Mechanism:</strong>
-                    <ul class="list-disc list-inside ml-8 mt-3 space-y-2">
+                    <ul class="list-disc list-inside ml-6 sm:ml-8 mt-4 space-y-3">
                         <li>Improves performance with a configurable cache TTL (default: 300s / 5 minutes).</li>
                         <li>Serves subsequent requests for the same name from the cache within the TTL period.</li>
-                        <li>Allows tuning: shorter TTL for dynamic environments (accuracy), longer TTL for stable ones
-                            (performance).
-                        </li>
+                        <li>Allows tuning: shorter TTL for dynamic environments (accuracy), longer TTL for stable ones (performance).</li>
                     </ul>
                 </li>
                 <li>
                     <strong>Simple Configuration:</strong>
-                    <ul class="list-disc list-inside ml-8 mt-3 space-y-2">
+                    <ul class="list-disc list-inside ml-6 sm:ml-8 mt-4 space-y-3">
                         <li>Minimal setup required.</li>
-                        <li>Configure via command-line options or a configuration file (<code>/etc/docker-dns/docker-dns.conf</code>).
-                        </li>
+                        <li>Configure via command-line options or a configuration file (<code>/etc/docker-dns/docker-dns.conf</code>).</li>
                         <li>Manage settings like listening IP, TTL, TLD, and fallback DNS servers.</li>
                     </ul>
                 </li>
                 <li>
                     <strong>Debian Package:</strong>
-                    <ul class="list-disc list-inside ml-8 mt-3 space-y-2">
+                    <ul class="list-disc list-inside ml-6 sm:ml-8 mt-4 space-y-3">
                         <li>Convenient <code>.deb</code> package for easy installation on Debian/Ubuntu.</li>
                         <li>Handles dependencies and system integration automatically.</li>
                     </ul>
                 </li>
                 <li>
                     <strong>Fallback DNS:</strong>
-                    <ul class="list-disc list-inside ml-8 mt-3 space-y-2">
+                    <ul class="list-disc list-inside ml-6 sm:ml-8 mt-4 space-y-3">
                         <li>Acts as a complete DNS server for the host.</li>
-                        <li>Forwards non-Docker domain queries (e.g., <code>google.com</code>) to configurable fallback
-                            DNS servers (default: Google DNS <code>8.8.8.8</code>, <code>8.8.4.4</code>; Cloudflare DNS
-                            <code>1.1.1.1</code>).
-                        </li>
-                        <li>Allows using docker-dns as the primary DNS server for your machine, handling both internal
-                            and external lookups.
-                        </li>
+                        <li>Forwards non-Docker domain queries (e.g., <code>google.com</code>) to configurable fallback DNS servers (default: Google DNS <code>8.8.8.8</code>, <code>8.8.4.4</code>; Cloudflare DNS <code>1.1.1.1</code>).</li>
+                        <li>Allows using docker-dns as the primary DNS server for your machine, handling both internal and external lookups.</li>
                     </ul>
                 </li>
                 <li>
                     <strong>Lightweight and Fast:</strong>
-                    <ul class="list-disc list-inside ml-8 mt-3 space-y-2">
+                    <ul class="list-disc list-inside ml-6 sm:ml-8 mt-4 space-y-3">
                         <li>Built with Go for efficiency and speed.</li>
                         <li>Low resource consumption (CPU/memory).</li>
                         <li>Delivers fast, responsive DNS resolution.</li>
@@ -313,63 +321,51 @@
         </section>
 
         <section id="installation">
-            <h2 class="text-3xl font-semibold mb-5">Installation and Integration (Debian/Ubuntu)</h2>
+            <h2 class="text-2xl sm:text-3xl font-semibold mb-6">Installation and Integration (Debian/Ubuntu)</h2>
             <p>Installing docker-dns on Linux/Debian systems is straightforward:</p>
 
-            <h3 class="text-2xl font-medium mt-8 mb-4">1. Download and Install</h3>
-            <p class="mb-3">Use the provided script to get the latest <code>.deb</code> package:</p>
-            <pre><code class="language-bash">wget https://raw.githubusercontent.com/MedUnes/docker-dns/master/install_debian_latest.sh &&
-chmod +x install_debian_latest.sh &&
+            <h3 class="text-xl sm:text-2xl font-medium mt-10 mb-5">1. Download and Install</h3>
+            <p class="mb-4">Use the provided script to get the latest <code>.deb</code> package:</p>
+            <pre><code class="language-bash">wget https://raw.githubusercontent.com/MedUnes/docker-dns/master/install_debian_latest.sh
+chmod +x install_debian_latest.sh
 ./install_debian_latest.sh</code></pre>
-            <h3 class="text-2xl font-medium mt-8 mb-4">2. Setup & Integration Details</h3>
-            <ul class="list-disc list-inside space-y-2">
-                <li>The package automatically detects your system's DNS resolver (e.g., <code>systemd-resolved</code>,
-                    <code>dnsmasq</code>, <code>unbound</code>, plain <code>/etc/resolv.conf</code>).
-                </li>
+            <p class="mb-4">Install the downloaded package (replace <code>1.1.1</code> with the actual version):</p>
+            <pre><code class="language-bash">sudo dpkg -i docker-dns-*.deb # Use wildcard or specific version</code></pre>
+
+            <h3 class="text-xl sm:text-2xl font-medium mt-10 mb-5">2. Setup & Integration Details</h3>
+            <ul class="list-disc list-inside space-y-3">
+                <li>The package automatically detects your system's DNS resolver (e.g., <code>systemd-resolved</code>, <code>dnsmasq</code>, <code>unbound</code>, plain <code>/etc/resolv.conf</code>).</li>
                 <li>During interactive installation, it prompts for integration confirmation.</li>
                 <li>Uses safe drop-in configuration files (no core system file modification).</li>
                 <li>Restarts the DNS subsystem only if necessary.</li>
                 <li>Backs up modified configuration files to <code>/var/lib/docker-dns/backup</code>.</li>
             </ul>
 
-            <h3 class="text-2xl font-medium mt-8 mb-4">3. Integration Modes</h3>
-            <ul class="list-disc list-inside space-y-3">
-                <li><strong><code>systemd-resolved</code>:</strong> Adds a drop-in config (<code>/etc/systemd/resolved.conf.d/</code>)
-                    to forward <code>.docker</code> TLD queries to <code>127.0.0.153</code>. Optionally disables DHCP
-                    DNS injection. (<em>Note:</em> Creates symlink <code>/etc/resolv.conf</code> -> <code>/run/systemd/resolve/stub-resolv.conf</code>.
-                    See <a href="https://www.freedesktop.org/software/systemd/man/systemd-resolved.service.html"
-                           target="_blank" rel="noopener noreferrer">systemd-resolved docs</a> and <a
-                            href="https://wiki.archlinux.org/title/Systemd-resolved" target="_blank"
-                            rel="noopener noreferrer">ArchWiki</a>).
-                </li>
-                <li><strong><code>dnsmasq</code>:</strong> Appends <code>server=/.docker/127.0.0.153</code> (or similar)
-                    to a config file in <code>/etc/dnsmasq.d/</code>.
-                </li>
-                <li><strong><code>unbound</code>:</strong> Adds a <code>stub-zone</code> block to a config file in
-                    <code>/etc/unbound/unbound.d/</code> delegating <code>.docker</code> to docker-dns.
-                </li>
-                <li><strong>Plain <code>resolv.conf</code>:</strong> Adds <code>nameserver 127.0.0.153</code> to <code>/etc/resolv.conf</code>,
-                    making docker-dns the primary DNS server.
-                </li>
+            <h3 class="text-xl sm:text-2xl font-medium mt-10 mb-5">3. Integration Modes</h3>
+            <ul class="list-disc list-inside space-y-4">
+                <li><strong><code>systemd-resolved</code>:</strong> Adds a drop-in config (<code>/etc/systemd/resolved.conf.d/</code>) to forward <code>.docker</code> TLD queries to <code>127.0.0.153</code>. Optionally disables DHCP DNS injection. (<em>Note:</em> Creates symlink <code>/etc/resolv.conf</code> -> <code>/run/systemd/resolve/stub-resolv.conf</code>. See <a href="https://www.freedesktop.org/software/systemd/man/systemd-resolved.service.html" target="_blank" rel="noopener noreferrer">systemd-resolved docs</a> and <a href="https://wiki.archlinux.org/title/Systemd-resolved" target="_blank" rel="noopener noreferrer">ArchWiki</a>).</li>
+                <li><strong><code>dnsmasq</code>:</strong> Appends <code>server=/.docker/127.0.0.153</code> (or similar) to a config file in <code>/etc/dnsmasq.d/</code>.</li>
+                <li><strong><code>unbound</code>:</strong> Adds a <code>stub-zone</code> block to a config file in <code>/etc/unbound/unbound.d/</code> delegating <code>.docker</code> to docker-dns.</li>
+                <li><strong>Plain <code>resolv.conf</code>:</strong> Adds <code>nameserver 127.0.0.153</code> to <code>/etc/resolv.conf</code>, making docker-dns the primary DNS server.</li>
             </ul>
 
-            <h3 class="text-2xl font-medium mt-8 mb-4">4. Rollback</h3>
-            <p class="mb-3">Remove the service but keep configs:</p>
+            <h3 class="text-xl sm:text-2xl font-medium mt-10 mb-5">4. Rollback</h3>
+            <p class="mb-4">Remove the service but keep configs:</p>
             <pre><code class="language-bash">sudo dpkg -r docker-dns</code></pre>
-            <p class="mb-3">Completely remove docker-dns and restore previous DNS settings:</p>
+            <p class="mb-4">Completely remove docker-dns and restore previous DNS settings:</p>
             <pre><code class="language-bash">sudo dpkg -P docker-dns</code></pre>
         </section>
 
         <section id="configuration">
-            <h2 class="text-3xl font-semibold mb-5">Configuration</h2>
+            <h2 class="text-2xl sm:text-3xl font-semibold mb-6">Configuration</h2>
             <p>Tailor docker-dns to your needs:</p>
 
-            <h3 class="text-2xl font-medium mt-8 mb-4">1. Check Service Status</h3>
+            <h3 class="text-xl sm:text-2xl font-medium mt-10 mb-5">1. Check Service Status</h3>
             <pre><code class="language-bash">systemctl status docker-dns</code></pre>
 
-            <h3 class="text-2xl font-medium mt-8 mb-4">2. Edit Configuration (Optional)</h3>
-            <p class="mb-3">Primary config file: <code>/etc/docker-dns/docker-dns.conf</code> (INI format)</p>
-            <p class="mb-4">Options:</p>
+            <h3 class="text-xl sm:text-2xl font-medium mt-10 mb-5">2. Edit Configuration (Optional)</h3>
+            <p class="mb-4">Primary config file: <code>/etc/docker-dns/docker-dns.conf</code> (INI format)</p>
+            <p class="mb-5">Options:</p>
             <div class="overflow-x-auto">
                 <table>
                     <thead>
@@ -418,32 +414,21 @@ chmod +x install_debian_latest.sh &&
                     </tbody>
                 </table>
             </div>
-            <ul class="list-disc list-inside space-y-3 mt-6">
-                <li><strong><code>IP</code></strong>: Defines the listening IP address. Default <code>127.0.0.153</code>
-                    is in the loopback range. Change if the IP is in use or you need to listen on a specific interface.
-                </li>
-                <li><strong><code>TTL</code></strong>: Sets cache duration. Higher TTL = better performance (stable
-                    IPs); Lower TTL = better accuracy (dynamic IPs).
-                </li>
-                <li><strong><code>TLD</code></strong>: Specifies the TLD for container resolution (e.g., <code>mycontainer.local</code>
-                    if <code>TLD=local</code>).
-                </li>
-                <li><strong><code>DEFAULT_RESOLVER</code></strong>: Comma-separated list of fallback DNS servers for
-                    non-<code>.docker</code> queries. Customize with your preferred resolvers (ISP DNS, Pi-Hole, etc.).
-                    Provides redundancy.
-                </li>
+            <ul class="list-disc list-inside space-y-4 mt-8">
+                <li><strong><code>IP</code></strong>: Defines the listening IP address. Default <code>127.0.0.153</code> is in the loopback range. Change if the IP is in use or you need to listen on a specific interface.</li>
+                <li><strong><code>TTL</code></strong>: Sets cache duration. Higher TTL = better performance (stable IPs); Lower TTL = better accuracy (dynamic IPs).</li>
+                <li><strong><code>TLD</code></strong>: Specifies the TLD for container resolution (e.g., <code>mycontainer.local</code> if <code>TLD=local</code>).</li>
+                <li><strong><code>DEFAULT_RESOLVER</code></strong>: Comma-separated list of fallback DNS servers for non-<code>.docker</code> queries. Customize with your preferred resolvers (ISP DNS, Pi-Hole, etc.). Provides redundancy.</li>
             </ul>
 
-            <h3 class="text-2xl font-medium mt-8 mb-4">3. Restart Service After Changes</h3>
+            <h3 class="text-xl sm:text-2xl font-medium mt-10 mb-5">3. Restart Service After Changes</h3>
             <pre><code class="language-bash">sudo systemctl restart docker-dns</code></pre>
         </section>
 
         <section id="use-cases">
-            <h2 class="text-3xl font-semibold mb-5">Practical Use Cases</h2>
-            <ul class="list-disc list-inside space-y-4">
-                <li><strong>Web Browser Access:</strong> Easily access web apps in containers. Navigate to <code>http://my-app.docker</code>
-                    (port 80) or <code>http://my-app.docker:3000</code> (port 3000).
-                </li>
+            <h2 class="text-2xl sm:text-3xl font-semibold mb-6">Practical Use Cases</h2>
+            <ul class="list-disc list-inside space-y-5">
+                <li><strong>Web Browser Access:</strong> Easily access web apps in containers. Navigate to <code>http://my-app.docker</code> (port 80) or <code>http://my-app.docker:3000</code> (port 3000).</li>
                 <li>
                     <strong>Resolve Container by Name (CLI):</strong> Verify resolution using <code>dig</code>.
                     <pre><code class="language-bash"># Query docker-dns directly for the IP of container 'web'
@@ -454,155 +439,137 @@ dig web.docker @127.0.0.153 +short</code></pre>
                     <pre><code class="language-bash"># Query docker-dns for google.com (will be forwarded)
 dig google.com @127.0.0.153 +short</code></pre>
                 </li>
-                <li><strong>Local Development Environments:</strong> Simplify communication between multi-container
-                    setups (e.g., frontend, backend, database) using names like <code>backend.docker</code>, <code>database.docker</code>.
-                </li>
-                <li><strong>Testing and Staging:</strong> Create more realistic local test environments mirroring
-                    production DNS behavior.
-                </li>
+                <li><strong>Local Development Environments:</strong> Simplify communication between multi-container setups (e.g., frontend, backend, database) using names like <code>backend.docker</code>, <code>database.docker</code>.</li>
+                <li><strong>Testing and Staging:</strong> Create more realistic local test environments mirroring production DNS behavior.</li>
                 <li><strong>Internal Tools:</strong> Access internal Dockerized tools using memorable names.</li>
-                <li><strong>Microservices Architectures (Local):</strong> Lightweight local service discovery for
-                    microservices using names like <code>service-a.docker</code>.
-                </li>
-                <li><strong>Homelab Setups:</strong> Access self-hosted services (Plex, Nextcloud, etc.) in Docker using
-                    names like <code>plex.docker</code>, <code>nextcloud.docker</code> by pointing your network DNS to
-                    the docker-dns host.
-                </li>
+                <li><strong>Microservices Architectures (Local):</strong> Lightweight local service discovery for microservices using names like <code>service-a.docker</code>.</li>
+                <li><strong>Homelab Setups:</strong> Access self-hosted services (Plex, Nextcloud, etc.) in Docker using names like <code>plex.docker</code>, <code>nextcloud.docker</code> by pointing your network DNS to the docker-dns host.</li>
             </ul>
         </section>
 
         <section id="why-use">
-            <h2 class="text-3xl font-semibold mb-5">Why Use docker-dns?</h2>
-            <div class="grid md:grid-cols-2 gap-10">
-                <div>
-                    <h3 class="text-xl font-medium mb-4">Without docker-dns:</h3>
-                    <ul class="list-disc list-inside space-y-2 text-red-700">
-                        <li>Constantly looking up dynamic container IPs.</li>
-                        <li>Frequent configuration updates due to changing IPs.</li>
-                        <li>Managing complex port forwarding (<code>-p</code> flag) and potential conflicts.</li>
-                        <li>Resorting to workarounds: manual network/IP management, separate DNS servers.</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3 class="text-xl font-medium mb-4">With docker-dns:</h3>
-                    <ul class="list-disc list-inside space-y-2 text-green-700">
-                        <li><strong>Simplified Access:</strong> Use intuitive container names.</li>
-                        <li><strong>Reduced Maintenance:</strong> Automatic DNS updates based on Docker events.</li>
-                        <li><strong>Intuitive Workflow:</strong> Focus on development, not networking complexities.</li>
-                        <li><strong>Improved Productivity:</strong> Streamlines the local Docker experience.</li>
-                    </ul>
-                </div>
+            <h2 class="text-2xl sm:text-3xl font-semibold mb-8">Why Use docker-dns?</h2> <div class="grid md:grid-cols-2 gap-8 lg:gap-12"> <div class="why-card why-card-red">
+            <h3 class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                Without docker-dns:
+            </h3>
+            <ul>
+                <li>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"> <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /> </svg>
+                    Constantly looking up dynamic container IPs.
+                </li>
+                <li>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"> <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /> </svg>
+                    Frequent configuration updates due to changing IPs.
+                </li>
+                <li>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"> <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /> </svg>
+                    Managing complex port forwarding (<code>-p</code> flag) and potential conflicts.
+                </li>
+                <li>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"> <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /> </svg>
+                    Resorting to workarounds: manual network/IP management, separate DNS servers.
+                </li>
+            </ul>
+        </div>
+            <div class="why-card why-card-green">
+                <h3 class="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    With docker-dns:
+                </h3>
+                <ul>
+                    <li>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"> <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /> </svg>
+                        <strong>Simplified Access:</strong> Use intuitive container names.
+                    </li>
+                    <li>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"> <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /> </svg>
+                        <strong>Reduced Maintenance:</strong> Automatic DNS updates based on Docker events.
+                    </li>
+                    <li>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"> <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /> </svg>
+                        <strong>Intuitive Workflow:</strong> Focus on development, not networking complexities.
+                    </li>
+                    <li>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"> <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /> </svg>
+                        <strong>Improved Productivity:</strong> Streamlines the local Docker experience.
+                    </li>
+                </ul>
             </div>
+        </div>
         </section>
-
         <section id="security">
-            <h2 class="text-3xl font-semibold mb-5">Security Considerations</h2>
-            <ul class="list-disc list-inside space-y-3">
+            <h2 class="text-2xl sm:text-3xl font-semibold mb-6">Security Considerations</h2>
+            <ul class="list-disc list-inside space-y-4">
                 <li><strong>Local Focus:</strong> Designed primarily for local development machines.</li>
-                <li><strong>Minimal Permissions:</strong> Typically operates with permissions needed to talk to the
-                    Docker daemon and manage local DNS, often without root.
-                </li>
-                <li><strong>Limited Data Exposure:</strong> Handles internal Docker network info (names, IPs), not
-                    sensitive host data.
-                </li>
-                <li><strong>Safe Integration:</strong> Uses drop-in configs, avoiding core system file modification.
-                </li>
-                <li><strong>Fallback DNS Security:</strong> Relies on the trustworthiness of your configured fallback
-                    DNS providers. Choose reputable ones.
-                </li>
-                <li><strong>Open Source:</strong> Code is publicly available on GitHub for review and audit, fostering
-                    transparency and community security contributions.
-                </li>
+                <li><strong>Minimal Permissions:</strong> Typically operates with permissions needed to talk to the Docker daemon and manage local DNS, often without root.</li>
+                <li><strong>Limited Data Exposure:</strong> Handles internal Docker network info (names, IPs), not sensitive host data.</li>
+                <li><strong>Safe Integration:</strong> Uses drop-in configs, avoiding core system file modification.</li>
+                <li><strong>Fallback DNS Security:</strong> Relies on the trustworthiness of your configured fallback DNS providers. Choose reputable ones.</li>
+                <li><strong>Open Source:</strong> Code is publicly available on GitHub for review and audit, fostering transparency and community security contributions.</li>
             </ul>
         </section>
 
         <section id="real-world">
-            <h2 class="text-3xl font-semibold mb-5">docker-dns in the Real World</h2>
-            <ul class="list-disc list-inside space-y-3">
-                <li><strong>Integration with Docker Compose:</strong> Services defined in
-                    <code>docker-compose.yml</code> can communicate using <code>service-name.docker</code> (e.g., <code>web.docker</code>),
-                    simplifying multi-container app development.
-                </li>
-                <li><strong>CI/CD Pipelines (Local Testing):</strong> Enables consistent name resolution for more
-                    reliable local test suites.
-                </li>
-                <li><strong>Working with Multiple Docker Networks:</strong> Can potentially be configured to resolve
-                    names across different user-defined Docker networks.
-                </li>
-                <li><strong>Comparison with <code>--link</code> (Legacy):</strong> docker-dns offers a more robust,
-                    flexible, and modern DNS-based solution compared to the limited, legacy <code>--link</code> feature.
-                </li>
+            <h2 class="text-2xl sm:text-3xl font-semibold mb-6">docker-dns in the Real World</h2>
+            <ul class="list-disc list-inside space-y-4">
+                <li><strong>Integration with Docker Compose:</strong> Services defined in <code>docker-compose.yml</code> can communicate using <code>service-name.docker</code> (e.g., <code>web.docker</code>), simplifying multi-container app development.</li>
+                <li><strong>CI/CD Pipelines (Local Testing):</strong> Enables consistent name resolution for more reliable local test suites.</li>
+                <li><strong>Working with Multiple Docker Networks:</strong> Can potentially be configured to resolve names across different user-defined Docker networks.</li>
+                <li><strong>Comparison with <code>--link</code> (Legacy):</strong> docker-dns offers a more robust, flexible, and modern DNS-based solution compared to the limited, legacy <code>--link</code> feature.</li>
             </ul>
         </section>
 
         <section id="unique">
-            <h2 class="text-3xl font-semibold mb-5">What Makes docker-dns Unique?</h2>
-            <ul class="list-disc list-inside space-y-3 mb-8">
-                <li><strong>Ease of Use & Integration:</strong> Simple installation (.deb package) and automatic
-                    resolver integration.
-                </li>
-                <li><strong>Lightweight & Performance-Focused:</strong> Built with Go for speed and low resource usage.
-                </li>
-                <li><strong>Flexibility & Configurability:</strong> Balances simplicity with options (IP, TTL, TLD,
-                    Fallback DNS).
-                </li>
-                <li><strong>Comprehensive Solution:</strong> Handles both Docker container resolution and standard
-                    internet DNS lookups.
-                </li>
+            <h2 class="text-2xl sm:text-3xl font-semibold mb-6">What Makes docker-dns Unique?</h2>
+            <ul class="list-disc list-inside space-y-4 mb-10">
+                <li><strong>Ease of Use & Integration:</strong> Simple installation (.deb package) and automatic resolver integration.</li>
+                <li><strong>Lightweight & Performance-Focused:</strong> Built with Go for speed and low resource usage.</li>
+                <li><strong>Flexibility & Configurability:</strong> Balances simplicity with options (IP, TTL, TLD, Fallback DNS).</li>
+                <li><strong>Comprehensive Solution:</strong> Handles both Docker container resolution and standard internet DNS lookups.</li>
             </ul>
 
-            <h3 class="text-2xl font-medium mt-8 mb-4">Comparison with Alternatives:</h3>
-            <ul class="list-disc list-inside space-y-3">
+            <h3 class="text-xl sm:text-2xl font-medium mt-10 mb-5">Comparison with Alternatives:</h3>
+            <ul class="list-disc list-inside space-y-4">
                 <li><strong>Manual <code>/etc/hosts</code>:</strong> docker-dns is automated and dynamic.</li>
-                <li><strong>Full DNS Servers (BIND, CoreDNS):</strong> docker-dns is simpler and specifically targeted
-                    for local Docker use.
-                </li>
-                <li><strong>Docker Embedded DNS:</strong> docker-dns extends resolution to the <em>host</em> machine
-                    using a custom TLD, which Docker's embedded DNS doesn't do by default for host access.
-                </li>
-                <li><strong>Other Tools (e.g., <code>devdns</code>, <code>ldhdns</code>, <code>docker-discover</code>):</strong>
-                    docker-dns aims for broad resolver compatibility, ease of use (especially via <code>.deb</code>),
-                    and a focused, lightweight approach without extra dependencies like proxies or etcd.
-                </li>
+                <li><strong>Full DNS Servers (BIND, CoreDNS):</strong> docker-dns is simpler and specifically targeted for local Docker use.</li>
+                <li><strong>Docker Embedded DNS:</strong> docker-dns extends resolution to the <em>host</em> machine using a custom TLD, which Docker's embedded DNS doesn't do by default for host access.</li>
+                <li><strong>Other Tools (e.g., <code>devdns</code>, <code>ldhdns</code>, <code>docker-discover</code>):</strong> docker-dns aims for broad resolver compatibility, ease of use (especially via <code>.deb</code>), and a focused, lightweight approach without extra dependencies like proxies or etcd.</li>
             </ul>
         </section>
 
         <section id="contributing">
-            <h2 class="text-3xl font-semibold mb-5">Contributing</h2>
-            <p class="mb-6">Interested in building from source or contributing?</p>
-            <h3 class="text-2xl font-medium mt-8 mb-4">1. Build</h3>
+            <h2 class="text-2xl sm:text-3xl font-semibold mb-6">Contributing</h2>
+            <p class="mb-8">Interested in building from source or contributing?</p>
+            <h3 class="text-xl sm:text-2xl font-medium mt-10 mb-5">1. Build</h3>
             <pre><code class="language-bash">git clone https://github.com/medunes/docker-dns.git
 cd docker-dns
 make build</code></pre>
 
-            <h3 class="text-2xl font-medium mt-8 mb-4">2. Run (after build)</h3>
+            <h3 class="text-xl sm:text-2xl font-medium mt-10 mb-5">2. Run (after build)</h3>
             <pre><code class="language-bash">sudo ./docker-dns &</code></pre>
 
-            <p class="mt-6">Contributions (pull requests, issues) are welcome on the <a
-                    href="https://github.com/medunes/docker-dns" target="_blank" rel="noopener noreferrer">GitHub
-                repository</a>.</p></section>
-
-        <section id="license">
-            <h2 class="text-3xl font-semibold mb-5">License</h2>
-            <p>This project is licensed under the <strong>AGPL License</strong>. See the <a
-                    href="https://github.com/medunes/docker-dns/blob/master/LICENSE" target="_blank"
-                    rel="noopener noreferrer">LICENSE</a> file for details.</p>
+            <p class="mt-8">Contributions (pull requests, issues) are welcome on the <a href="https://github.com/medunes/docker-dns" target="_blank" rel="noopener noreferrer">GitHub repository</a>.</p>
         </section>
 
-        <section id="conclusion"><h2 class="text-3xl font-semibold mb-5">Conclusion</h2>
-            <p class="mb-5">docker-dns offers a simple, efficient solution for Docker networking challenges. It provides
-                automatic name resolution, caching, easy configuration, and seamless integration. Simplify access to
-                your containers, streamline development, and improve productivity.</p>
-            <p class="font-semibold text-lg mt-5">Try <code>docker-dns</code> today!</p></section>
+        <section id="license">
+            <h2 class="text-2xl sm:text-3xl font-semibold mb-6">License</h2>
+            <p>This project is licensed under the <strong>AGPL License</strong>. See the <a href="https://github.com/medunes/docker-dns/blob/master/LICENSE" target="_blank" rel="noopener noreferrer">LICENSE</a> file for details.</p>
+        </section>
+
+        <section id="conclusion" class="text-center bg-blue-50 p-10 sm:p-12 rounded-lg"> <h2 class="text-2xl sm:text-3xl font-semibold mb-6">Conclusion</h2>
+            <p class="mb-6">docker-dns offers a simple, efficient solution for Docker networking challenges. It provides automatic name resolution, caching, easy configuration, and seamless integration. Simplify access to your containers, streamline development, and improve productivity.</p>
+            <p class="font-semibold text-lg mt-6">Try <code>docker-dns</code> today!</p>
+        </section>
 
     </main>
 
-    <footer class="mt-20 pt-10 border-t text-center text-sm">
-        <p>&copy;
-            <script>document.write(new Date().getFullYear())</script>
-            MedUnes. docker-dns Project.
-        </p>
-    </footer>
+    <footer class="mt-20 sm:mt-24 pt-10 sm:pt-12 border-t border-gray-700 text-center text-sm"> <p>&copy; <script>document.write(new Date().getFullYear())</script> MedUnes. docker-dns Project.</p>
+        <p class="mt-2">Generated on: April 26, 2025</p> </footer>
 
 </div>
 
