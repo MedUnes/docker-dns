@@ -45,82 +45,76 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create Dockerfile for systemd container
+      - name: Install test packages
         run: |
-          cat > Dockerfile.systemd <<EOF
-          FROM ubuntu:22.04
-          
-          # Install systemd, Docker, and other essentials
-          RUN apt-get update && \\
-              DEBIAN_FRONTEND=noninteractive apt-get install -y \\
-              systemd systemd-sysv \\
-              dnsutils \\
-              bats \\
-              curl \\
-              apt-transport-https \\
-              ca-certificates \\
-              gnupg \\
-              lsb-release
-          
-          # Install Docker
-          RUN curl -fsSL https://get.docker.com | sh
-          
-          # Clean up apt cache
-          RUN rm -rf /var/lib/apt/lists/*
-          
-          # Configure systemd
-          RUN cd /lib/systemd/system/sysinit.target.wants/ && \\
-              rm -f \$(ls | grep -v systemd-tmpfiles-setup) && \\
-              rm -f /lib/systemd/system/multi-user.target.wants/* && \\
-              rm -f /etc/systemd/system/*.wants/* && \\
-              rm -f /lib/systemd/system/local-fs.target.wants/* && \\
-              rm -f /lib/systemd/system/sockets.target.wants/*udev* && \\
-              rm -f /lib/systemd/system/sockets.target.wants/*initctl* && \\
-              rm -f /lib/systemd/system/basic.target.wants/* && \\
-              rm -f /lib/systemd/system/anaconda.target.wants/*
-          
-          # Enable systemd-resolved (will be done at runtime)
-          RUN echo "systemd-resolved will be enabled at runtime"
-          
-          # Set entrypoint for systemd
-          CMD ["/lib/systemd/systemd"]
-          EOF
-          
-          # Build the Docker image
-          docker build -t systemd-docker-test -f Dockerfile.systemd .
+          sudo apt-get update
+          sudo apt-get install -y bats dnsutils
 
-      - name: Run tests in systemd container
+      - name: Run systemd container using jrei/systemd-ubuntu
         run: |
-          # Run the container with systemd as init
+          # Use a pre-built systemd container that's known to work
           docker run --name systemd-test -d --privileged \
             -v $(pwd):/app \
             -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
             --tmpfs /tmp --tmpfs /run --tmpfs /run/lock \
-            systemd-docker-test
+            jrei/systemd-ubuntu:22.04
           
-          # Give systemd a moment to initialize
-          sleep 10
+          # Wait for container to initialize
+          for i in {1..30}; do
+            if docker exec systemd-test systemctl status &>/dev/null; then
+              echo "systemd is running!"
+              break
+            fi
+            echo "Waiting for systemd to initialize... $i/30"
+            sleep 1
           
-          # Enable systemd-resolved now that we're running
+            # Show container logs for debugging
+            echo "Container logs:"
+            docker logs systemd-test
+          done
+          
+          # Install necessary packages
+          docker exec systemd-test apt-get update
+          docker exec systemd-test apt-get install -y bats dnsutils curl systemd-resolved
+          
+          # Install Docker
+          docker exec systemd-test bash -c "curl -fsSL https://get.docker.com | sh"
+          
+          # Enable systemd-resolved
           docker exec systemd-test systemctl enable systemd-resolved
           docker exec systemd-test systemctl start systemd-resolved
           
-          # Copy test files if needed and run tests
-          docker exec systemd-test bash -c "
-            mkdir -p /tests && 
-            cp -r /app/* /tests/ && 
-            cd /tests && 
-            systemctl status systemd-resolved && 
-            ls -la /usr/local/bin/ &&
-            docker --version &&
-            bats tests/e2e_test.sh || true
-          "
+          # Confirm services are running
+          docker exec systemd-test systemctl status systemd-resolved
+          docker exec systemd-test docker --version
           
-          # Get logs for debugging
-          echo "=== Docker logs ==="
-          docker logs systemd-test
+          # Setup for tests
+          docker cp . systemd-test:/tests
+          
+          # Debug test files
+          docker exec systemd-test ls -la /tests
+          docker exec systemd-test cat /tests/tests/e2e_test.sh
+          
+          # Run tests
+          docker exec systemd-test bash -c "cd /tests && bats tests/e2e_test.sh || true"
+
+      - name: Get diagnostic information
+        if: always()
+        run: |
+          echo "=== Docker container status ==="
+          docker ps -a
+          
+          echo "=== Container logs ==="
+          docker logs systemd-test || true
+          
+          echo "=== systemd status ==="
+          docker exec systemd-test systemctl status || true
+          
           echo "=== systemd-resolved status ==="
           docker exec systemd-test systemctl status systemd-resolved || true
+          
+          echo "=== journalctl output ==="
+          docker exec systemd-test journalctl -n 50 || true
 
       - name: Cleanup
         if: always()
