@@ -65,42 +65,34 @@ jobs:
           # dpkg -i ./docker-dns.deb || true
           apt-get install --fix-broken -y # Install any missing dependencies for the deb
 
-      - name: Configure systemd-resolved and Run E2E Tests
+      - name: Configure and Run Tests
         env:
           DOCKER_HOST: tcp://docker:2375
         run: |
-          # Fix DNS resolution for docker hostname
-          echo "Setting up DNS resolution:"
-          echo "nameserver 127.0.0.53" > /etc/resolv.conf
-          echo "options edns0 trust-ad" >> /etc/resolv.conf
-          echo "search ." >> /etc/resolv.conf
+          # Install required tools
+          apt-get update && apt-get install -y iproute2
           
-          # Add docker host to hosts file as fallback
-          echo "Adding docker host entry:"
-          echo "172.17.0.1 docker" >> /etc/hosts
+          # Discover Docker service IP
+          DOCKER_IP=$(ip route | awk '/default/ { print $3 }')
+          echo "Using Docker host IP: $DOCKER_IP"
           
-          # Verify DNS configuration
-          echo "DNS Configuration:"
-          resolvectl status
-          cat /etc/resolv.conf
-          cat /etc/hosts
+          # Configure direct connection
+          export DOCKER_HOST="tcp://$DOCKER_IP:2375"
+          echo "DOCKER_HOST set to: $DOCKER_HOST"
           
-          # Restart systemd-resolved
-          systemctl restart systemd-resolved
-          sleep 2
-          
-          # Test DNS resolution
-          echo "Testing docker host resolution:"
-          nslookup docker || true
-          dig docker +short || true
-          
-          # Wait for Docker daemon (using direct connection)
-          echo "Waiting for Docker socket..."
+          # Wait for Docker daemon
+          echo "Waiting for Docker daemon..."
           timeout=30
-          while ! docker -H tcp://docker:2375 info >/dev/null 2>&1; do
+          while ! docker info >/dev/null 2>&1; do
             sleep 1
             timeout=$((timeout-1))
             [ $timeout -le 0 ] && echo "Docker timeout" && exit 1
           done
           
-          # Continue with tests...
+          # Verify connection
+          echo "Docker connection successful:"
+          docker info
+          
+          # Run tests
+          echo "Running E2E tests..."
+          bats tests/e2e_test.sh
