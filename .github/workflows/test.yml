@@ -126,24 +126,8 @@ jobs:
       - name: Run Application/Package Tests
         run: |
           echo "Running tests inside the container..."
-          # Example: Run a test script from your repository
-          # podman exec ${{ env.CONTAINER_NAME }} /workdir/run-my-tests.sh
-
-          # Example: Directly execute test commands
-          # Verify Debian package installation and service status
-          # podman exec ${{ env.CONTAINER_NAME }} apt-get install -y /workdir/path/to/your-package.deb
-          # podman exec ${{ env.CONTAINER_NAME }} systemctl status your-service
-          # podman exec ${{ env.CONTAINER_NAME }} your-application --version
-
-          # Example: Verify Docker and Docker Compose are working
           podman exec ${{ env.CONTAINER_NAME }} docker ps
           podman exec ${{ env.CONTAINER_NAME }} docker run --rm hello-world
-          # Assuming you have a docker-compose.yml in /workdir
-          # podman exec -w /workdir ${{ env.CONTAINER_NAME }} docker compose up -d
-          # podman exec -w /workdir ${{ env.CONTAINER_NAME }} docker compose ps
-
-          # Placeholder for actual tests:
-          echo "Test placeholder: Simulating successful test execution."
           podman exec ${{ env.CONTAINER_NAME }} echo "Environment ready for testing."
 
       - name: Cleanup systemd container
