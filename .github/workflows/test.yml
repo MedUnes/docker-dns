@@ -51,33 +51,36 @@ jobs:
           FROM ubuntu:22.04
           
           # Install systemd, Docker, and other essentials
-          RUN apt-get update && \
-              DEBIAN_FRONTEND=noninteractive apt-get install -y \
-              systemd systemd-sysv \
-              dnsutils \
-              bats \
-              curl \
-              apt-transport-https \
-              ca-certificates \
-              gnupg \
-              lsb-release && \
-              # Install Docker
-              curl -fsSL https://get.docker.com | sh && \
-              # Clean up apt cache
-              rm -rf /var/lib/apt/lists/*
+          RUN apt-get update && \\
+              DEBIAN_FRONTEND=noninteractive apt-get install -y \\
+              systemd systemd-sysv \\
+              dnsutils \\
+              bats \\
+              curl \\
+              apt-transport-https \\
+              ca-certificates \\
+              gnupg \\
+              lsb-release
+          
+          # Install Docker
+          RUN curl -fsSL https://get.docker.com | sh
+          
+          # Clean up apt cache
+          RUN rm -rf /var/lib/apt/lists/*
           
           # Configure systemd
-          RUN cd /lib/systemd/system/sysinit.target.wants/ && \
-              rm -f $(ls | grep -v systemd-tmpfiles-setup) && \
-              rm -f /lib/systemd/system/multi-user.target.wants/* && \
-              rm -f /etc/systemd/system/*.wants/* && \
-              rm -f /lib/systemd/system/local-fs.target.wants/* && \
-              rm -f /lib/systemd/system/sockets.target.wants/*udev* && \
-              rm -f /lib/systemd/system/sockets.target.wants/*initctl* && \
-              rm -f /lib/systemd/system/basic.target.wants/* && \
-              rm -f /lib/systemd/system/anaconda.target.wants/* && \
-              # Enable systemd-resolved
-              systemctl enable systemd-resolved
+          RUN cd /lib/systemd/system/sysinit.target.wants/ && \\
+              rm -f \$(ls | grep -v systemd-tmpfiles-setup) && \\
+              rm -f /lib/systemd/system/multi-user.target.wants/* && \\
+              rm -f /etc/systemd/system/*.wants/* && \\
+              rm -f /lib/systemd/system/local-fs.target.wants/* && \\
+              rm -f /lib/systemd/system/sockets.target.wants/*udev* && \\
+              rm -f /lib/systemd/system/sockets.target.wants/*initctl* && \\
+              rm -f /lib/systemd/system/basic.target.wants/* && \\
+              rm -f /lib/systemd/system/anaconda.target.wants/*
+          
+          # Enable systemd-resolved (will be done at runtime)
+          RUN echo "systemd-resolved will be enabled at runtime"
           
           # Set entrypoint for systemd
           CMD ["/lib/systemd/systemd"]
@@ -90,18 +93,28 @@ jobs:
         run: |
           # Run the container with systemd as init
           docker run --name systemd-test -d --privileged \
-            -v $(pwd):/app -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+            -v $(pwd):/app \
+            -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
             --tmpfs /tmp --tmpfs /run --tmpfs /run/lock \
             systemd-docker-test
           
           # Give systemd a moment to initialize
-          sleep 5
+          sleep 10
           
-          # Copy test files if needed
-          docker exec systemd-test bash -c "mkdir -p /tests && cp -r /app/* /tests/ && cd /tests"
+          # Enable systemd-resolved now that we're running
+          docker exec systemd-test systemctl enable systemd-resolved
+          docker exec systemd-test systemctl start systemd-resolved
           
-          # Run the tests
-          docker exec systemd-test bash -c "cd /tests && systemctl status systemd-resolved && bats tests/e2e_test.sh || true"
+          # Copy test files if needed and run tests
+          docker exec systemd-test bash -c "
+            mkdir -p /tests && 
+            cp -r /app/* /tests/ && 
+            cd /tests && 
+            systemctl status systemd-resolved && 
+            ls -la /usr/local/bin/ &&
+            docker --version &&
+            bats tests/e2e_test.sh || true
+          "
           
           # Get logs for debugging
           echo "=== Docker logs ==="
