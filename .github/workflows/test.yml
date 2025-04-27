@@ -67,38 +67,40 @@ jobs:
 
       - name: Configure systemd-resolved and Run E2E Tests
         env:
-          # Ensure Docker CLI talks to the dind service
           DOCKER_HOST: tcp://docker:2375
         run: |
-          # Restart systemd-resolved to apply the new configuration
-          # Check if the service exists and restart it
-          if systemctl list-units --full -all | grep -q 'systemd-resolved.service'; then
-            echo "Restarting systemd-resolved service..."
-            systemctl restart systemd-resolved.service
-            # Give resolved a moment to restart and apply settings
-            sleep 2
-            resolvectl status # Print status for debugging
-          else
-            echo "Warning: systemd-resolved.service not found. Skipping restart."
-          fi
+          # Fix DNS resolution for docker hostname
+          echo "Setting up DNS resolution:"
+          echo "nameserver 127.0.0.53" > /etc/resolv.conf
+          echo "options edns0 trust-ad" >> /etc/resolv.conf
+          echo "search ." >> /etc/resolv.conf
           
-          # Wait for docker daemon (dind service) to be ready
-          echo "Waiting for Docker daemon (dind)..."
+          # Add docker host to hosts file as fallback
+          echo "Adding docker host entry:"
+          echo "172.17.0.1 docker" >> /etc/hosts
+          
+          # Verify DNS configuration
+          echo "DNS Configuration:"
+          resolvectl status
+          cat /etc/resolv.conf
+          cat /etc/hosts
+          
+          # Restart systemd-resolved
+          systemctl restart systemd-resolved
+          sleep 2
+          
+          # Test DNS resolution
+          echo "Testing docker host resolution:"
+          nslookup docker || true
+          dig docker +short || true
+          
+          # Wait for Docker daemon (using direct connection)
+          echo "Waiting for Docker socket..."
           timeout=30
-          while ! docker info > /dev/null 2>&1; do
+          while ! docker -H tcp://docker:2375 info >/dev/null 2>&1; do
             sleep 1
-            timeout=$((timeout - 1))
-            if [ $timeout -le 0 ]; then
-              echo "Docker daemon (dind) did not start within timeout."
-              docker info # Print info for debugging
-              exit 1
-            fi
+            timeout=$((timeout-1))
+            [ $timeout -le 0 ] && echo "Docker timeout" && exit 1
           done
-          echo "Docker daemon ready."
-
-          # Now run the tests (the bats setup function will start docker-dns)
-          echo "Running BATS tests..."
-          systemctl status systemd-resolved
-          docker version
-          systemctl status docker*
-          # bats tests/e2e_test.sh
+          
+          # Continue with tests...
