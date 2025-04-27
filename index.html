@@ -326,12 +326,11 @@
 
             <h3 class="text-xl sm:text-2xl font-medium mt-10 mb-5">1. Download and Install</h3>
             <p class="mb-4">Use the provided script to get the latest <code>.deb</code> package:</p>
-            <pre><code class="language-bash">wget https://raw.githubusercontent.com/MedUnes/docker-dns/master/install_debian_latest.sh
-chmod +x install_debian_latest.sh
-./install_debian_latest.sh</code></pre>
-            <p class="mb-4">Install the downloaded package (replace <code>1.1.1</code> with the actual version):</p>
-            <pre><code class="language-bash">sudo dpkg -i docker-dns-*.deb # Use wildcard or specific version</code></pre>
-
+            <pre><code class="language-bash">
+wget https://raw.githubusercontent.com/MedUnes/docker-dns/master/install_debian_latest.sh && \
+chmod +x install_debian_latest.sh && \
+./install_debian_latest.sh && \
+rm install_debian_latest.sh</code></pre>
             <h3 class="text-xl sm:text-2xl font-medium mt-10 mb-5">2. Setup & Integration Details</h3>
             <ul class="list-disc list-inside space-y-3">
                 <li>The package automatically detects your system's DNS resolver (e.g., <code>systemd-resolved</code>, <code>dnsmasq</code>, <code>unbound</code>, plain <code>/etc/resolv.conf</code>).</li>

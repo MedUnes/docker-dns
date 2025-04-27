@@ -1,23 +1,63 @@
-name: Tests
-on:
-  pull_request:
-    types:
-      - opened
+name: Test Pipeline
+
+on: [push, pull_request]
+
 jobs:
-  test:
+  unit-tests:
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Checkout
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
         with:
-          fetch-depth: 0
-      -
-        name: Set up Go
-        uses: actions/setup-go@v2
+          go-version: 1.21
+
+      - name: Run Unit Tests
+        run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+  integration-tests:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:dind
+        options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
         with:
-          go-version: 1.23
-      - name: Test
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: go run gotest.tools/gotestsum@latest --format=testdox ./...
+          go-version: 1.21
+
+      - name: Start Docker
+        run: |
+          docker version
+          docker run -d --name test-nginx nginx:alpine
+
+      - name: Run Integration Tests
+        run: go test -tags=integration -v ./...
+
+  e2e-tests:
+    needs: integration-tests
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu/systemd:22.04
+      options: --privileged --tmpfs /run --tmpfs /run/lock -v /sys/fs/cgroup:/sys/fs/cgroup:ro
+    services:
+      docker:
+        image: docker:dind
+        options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          apt-get update
+          apt-get install -y bats dnsutils docker.io
+          dpkg -i docker-dns.deb || apt-get install -f -y
+
+      - name: Run E2E Tests
+        run: |
+          bats tests/e2e_test.sh
