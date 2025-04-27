@@ -1,6 +1,6 @@
 name: Test Pipeline
 
-on: [push, pull_request]
+on: [ push, pull_request ]
 
 jobs:
   unit-tests:
@@ -40,7 +40,8 @@ jobs:
         run: go run gotest.tools/gotestsum@latest --format=testdox -- -tags=integration -v
 
   e2e-tests:
-    needs: integration-tests # Depends on successful integration tests
+    # Depend on both build (for the .deb) and integration tests
+    needs: [ build, integration-tests ]
     runs-on: ubuntu-latest
     container:
       # Corrected: Use the official ubuntu:22.04 image
@@ -54,28 +55,50 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Dependencies
+      # Download the .deb package built in the 'build' job
+      - name: Download docker-dns.deb artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-dns-deb
+          # Optional: specify path if needed, defaults to current dir
+
+      - name: Install Dependencies and docker-dns
         run: |
           # Update package lists
           apt-get update
-          # Install necessary tools: systemd (already present/installable in ubuntu:22.04), bats for testing,
-          # dnsutils (for dig), and docker client CLI (docker.io) to interact with the dind service.
-          # Use DEBIAN_FRONTEND=noninteractive to avoid prompts.
+          # Install necessary tools: systemd, bats, dnsutils, docker client CLI.
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends systemd bats dnsutils docker.io
-          # Assuming docker-dns.deb is built in a previous step or checked in
-          # Copy it if needed, e.g., from an artifact
-          # Example: download artifact if built previously
-          # Or if it's in the repo:
-          # dpkg -i path/to/docker-dns.deb || apt-get install -f -y
-          echo "Assuming docker-dns.deb is available or installed via other means"
-          # Example if it's checked in:
-          # dpkg -i ./docker-dns.deb || apt-get install --fix-broken -y
+          # Install the downloaded deb package
+          # Use || true on dpkg and apt-get install -f in case dependencies are already met
+          dpkg -i ./docker-dns.deb || true
+          apt-get install --fix-broken -y # Install any missing dependencies for the deb
 
-      - name: Run E2E Tests
+      - name: Configure systemd-resolved and Run E2E Tests
         env:
           # Ensure Docker CLI talks to the dind service
           DOCKER_HOST: tcp://docker:2375
         run: |
+          # Configure systemd-resolved to use docker-dns for .docker domain
+          echo "Configuring systemd-resolved..."
+          mkdir -p /etc/systemd/resolved.conf.d
+          cat <<EOF > /etc/systemd/resolved.conf.d/docker-dns.conf
+          [Resolve]
+          DNS=127.0.0.153
+          Domains=~docker
+          EOF
+
+          # Restart systemd-resolved to apply the new configuration
+          # Check if the service exists and restart it
+          if systemctl list-units --full -all | grep -q 'systemd-resolved.service'; then
+            echo "Restarting systemd-resolved service..."
+            systemctl restart systemd-resolved.service
+            # Give resolved a moment to restart and apply settings
+            sleep 2
+            resolvectl status # Print status for debugging
+          else
+            echo "Warning: systemd-resolved.service not found. Skipping restart."
+          fi
+
           # Wait for docker daemon (dind service) to be ready
           echo "Waiting for Docker daemon (dind)..."
           timeout=30
@@ -90,6 +113,8 @@ jobs:
           done
           echo "Docker daemon ready."
 
-          # Now run the tests (assuming docker-dns service is started by the test setup)
+          # Now run the tests (the bats setup function will start docker-dns)
+          echo "Running BATS tests..."
           bats tests/e2e_test.sh
+
 
