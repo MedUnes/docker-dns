@@ -40,24 +40,56 @@ jobs:
         run: go run gotest.tools/gotestsum@latest --format=testdox -- -tags=integration -v
 
   e2e-tests:
-    needs: integration-tests
+    needs: integration-tests # Depends on successful integration tests
     runs-on: ubuntu-latest
     container:
-      image: ubuntu/systemd:22.04
+      # Corrected: Use the official ubuntu:22.04 image
+      image: ubuntu:22.04
+      # Options to allow systemd and Docker-in-Docker to function
       options: --privileged --tmpfs /run --tmpfs /run/lock -v /sys/fs/cgroup:/sys/fs/cgroup:ro
     services:
       docker:
-        image: docker:dind
-        options: --privileged
+        image: docker:dind # Docker-in-Docker service
+        options: --privileged # dind needs privileged mode
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Dependencies
         run: |
+          # Update package lists
           apt-get update
-          apt-get install -y bats dnsutils docker.io
-          dpkg -i docker-dns.deb || apt-get install -f -y
+          # Install necessary tools: systemd (already present/installable in ubuntu:22.04), bats for testing,
+          # dnsutils (for dig), and docker client CLI (docker.io) to interact with the dind service.
+          # Use DEBIAN_FRONTEND=noninteractive to avoid prompts.
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends systemd bats dnsutils docker.io
+          # Assuming docker-dns.deb is built in a previous step or checked in
+          # Copy it if needed, e.g., from an artifact
+          # Example: download artifact if built previously
+          # Or if it's in the repo:
+          # dpkg -i path/to/docker-dns.deb || apt-get install -f -y
+          echo "Assuming docker-dns.deb is available or installed via other means"
+          # Example if it's checked in:
+          # dpkg -i ./docker-dns.deb || apt-get install --fix-broken -y
 
       - name: Run E2E Tests
+        env:
+          # Ensure Docker CLI talks to the dind service
+          DOCKER_HOST: tcp://docker:2375
         run: |
+          # Wait for docker daemon (dind service) to be ready
+          echo "Waiting for Docker daemon (dind)..."
+          timeout=30
+          while ! docker info > /dev/null 2>&1; do
+            sleep 1
+            timeout=$((timeout - 1))
+            if [ $timeout -le 0 ]; then
+              echo "Docker daemon (dind) did not start within timeout."
+              docker info # Print info for debugging
+              exit 1
+            fi
+          done
+          echo "Docker daemon ready."
+
+          # Now run the tests (assuming docker-dns service is started by the test setup)
           bats tests/e2e_test.sh
+
