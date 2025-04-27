@@ -54,14 +54,6 @@ jobs:
         options: --privileged # dind needs privileged mode
     steps:
       - uses: actions/checkout@v4
-
-      # Download the .deb package built in the 'build' job
-      - name: Download docker-dns.deb artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-dns-deb
-          # Optional: specify path if needed, defaults to current dir
-
       - name: Install Dependencies and docker-dns
         run: |
           # Update package lists
