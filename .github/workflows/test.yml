@@ -45,32 +45,45 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Dependencies in Ubuntu Container
+      - name: Setup Docker container
         run: |
-          # Run installation steps in Ubuntu container with Docker socket mounted
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $PWD:/workspace -w /workspace ubuntu:22.04 bash -c "
+          # Create a container with systemd and Docker
+          docker run -d --name test-container --privileged \
+            -v $PWD:/workspace -w /workspace \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            ubuntu:22.04 sleep infinity
+          
+          # Install required packages in the container
+          docker exec test-container bash -c "
             apt-get update && \
             DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-              systemd systemd-resolved bats dnsutils apt-utils ca-certificates curl gnupg lsb-release && \
+              systemd \
+              bats \
+              dnsutils \
+              apt-transport-https \
+              ca-certificates \
+              curl \
+              gnupg \
+              lsb-release && \
           
-            # Install Docker CLI only (not the daemon)
-            mkdir -p /etc/apt/keyrings && \
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
-            echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable\" > /etc/apt/sources.list.d/docker.list && \
-            apt-get update && \
-            apt-get install -y docker-ce-cli && \
+            # Install Docker CLI
+            curl -fsSL https://get.docker.com | sh && \
           
-            # Start systemd-resolved if needed for your tests
-            systemctl enable systemd-resolved && \
-            systemctl start systemd-resolved || true && \
-          
-            # For demonstration purposes, verify Docker works
-            docker ps
+            # Verify Docker CLI works
+            docker --version
           "
 
       - name: Run Tests
         run: |
-          # Run tests inside Ubuntu container with Docker socket mounted
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $PWD:/workspace -w /workspace ubuntu:22.04 bash -c "
-            apt-get update && \
-            apt-get install -y bats  "
+          docker exec test-container bash -c "
+            # systemd-resolved is already part of systemd
+            systemctl --version && \
+            ls -la /etc/systemd/resolved.conf && \
+          
+            # Run your tests
+            bats tests/e2e_test.sh
+          "
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f test-container
