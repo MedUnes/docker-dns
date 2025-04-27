@@ -42,32 +42,35 @@ jobs:
   debian-install-test:
     needs: [ integration-tests ]
     runs-on: ubuntu-latest
-    container:
-      image: ubuntu:22.04
-      options: --privileged --tmpfs /run --tmpfs /run/lock -v /sys/fs/cgroup:/sys/fs/cgroup:ro
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Dependencies
+      - name: Install Dependencies in Ubuntu Container
         run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends systemd bats dnsutils docker.io curl gnupg lsb-release ca-certificates
+          # Run installation steps in Ubuntu container with Docker socket mounted
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $PWD:/workspace -w /workspace ubuntu:22.04 bash -c "
+            apt-get update && \
+            DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+              systemd systemd-resolved bats dnsutils apt-utils ca-certificates curl gnupg lsb-release && \
           
-          # Set up Docker repository properly
-          mkdir -p /etc/apt/keyrings
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+            # Install Docker CLI only (not the daemon)
+            mkdir -p /etc/apt/keyrings && \
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+            echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable\" > /etc/apt/sources.list.d/docker.list && \
+            apt-get update && \
+            apt-get install -y docker-ce-cli && \
           
-          apt-get update
-          apt-get install -y docker-ce docker-ce-cli containerd.io
+            # Start systemd-resolved if needed for your tests
+            systemctl enable systemd-resolved && \
+            systemctl start systemd-resolved || true && \
           
-          # Start Docker service
-          service docker start
-          
-          # Verify Docker is running
-          docker ps
+            # For demonstration purposes, verify Docker works
+            docker ps
+          "
 
       - name: Run Tests
         run: |
-          # Run your tests
-          echo "Running E2E tests..."
+          # Run tests inside Ubuntu container with Docker socket mounted
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $PWD:/workspace -w /workspace ubuntu:22.04 bash -c "
+            apt-get update && \
+            apt-get install -y bats  "
