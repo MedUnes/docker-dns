@@ -70,7 +70,7 @@ jobs:
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends systemd bats dnsutils docker.io
           # Install the downloaded deb package
           # Use || true on dpkg and apt-get install -f in case dependencies are already met
-          dpkg -i ./docker-dns.deb || true
+          # dpkg -i ./docker-dns.deb || true
           apt-get install --fix-broken -y # Install any missing dependencies for the deb
 
       - name: Configure systemd-resolved and Run E2E Tests
@@ -106,50 +106,7 @@ jobs:
 
           # Now run the tests (the bats setup function will start docker-dns)
           echo "Running BATS tests..."
+          systemctl status systemd-resolved
+          docker version
+          systemctl status docker*
           # bats tests/e2e_test.sh
-
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Set up Go
-        uses: actions/setup-go@v5
-      - name: Run GoReleaser
-        id: run_go_releaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          distribution: goreleaser
-          version: '~> v2'
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.ACTION_SECRET }}
-      - name: Get release upload URL
-        id: get_release_url
-        run: |
-          release_data=$(gh api repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME})
-          echo "UPLOAD_URL=$(echo $release_data | jq -r '.upload_url' | sed 's/{.*}//')" >> $GITHUB_ENV
-        env:
-          GH_TOKEN: ${{ secrets.ACTION_SECRET }}
-      - name: Build Debian Package
-        run: |
-          cd ./build/dpkg
-          export NUMERIC_VERSION=$(echo "${{ github.ref_name }}" | sed  "s/v//g")
-          echo "NUMERIC_VERSION=${NUMERIC_VERSION}" >> $GITHUB_ENV
-          ./build.sh  ${{ github.repository_owner }} ${{ github.event.repository.name }} "${{ github.ref_name }}"
-      - name: Upload Debian package to GitHub Release
-        run: |
-          CUR_DIR="./build/dpkg/"
-          DEB_FILE=$(ls ./build/dpkg/*.deb | tail -1)
-          CHECKSUM_SUFFIX="_checksum.txt"
-          sha256sum "$DEB_FILE" | sed "s#$CUR_DIR##g"
-          sha256sum "$DEB_FILE" | sed "s#$CUR_DIR##g" > "$DEB_FILE$CHECKSUM_SUFFIX"
-          echo "DEB_FILE=$DEB_FILE"
-          echo "DEB_CHECKSUM_FILE=$DEB_FILE$CHECKSUM_SUFFIX"
-          cat "$DEB_FILE$CHECKSUM_SUFFIX"
-          gh release upload "${GITHUB_REF_NAME}" ./build/dpkg/*.deb --repo "${GITHUB_REPOSITORY}"
-          gh release upload "${GITHUB_REF_NAME}" "$DEB_FILE$CHECKSUM_SUFFIX" --repo "${GITHUB_REPOSITORY}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.ACTION_SECRET }}
