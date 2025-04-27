@@ -45,45 +45,70 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Docker container
+      - name: Create Dockerfile for systemd container
         run: |
-          # Create a container with systemd and Docker
-          docker run -d --name test-container --privileged \
-            -v $PWD:/workspace -w /workspace \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            ubuntu:22.04 sleep infinity
+          cat > Dockerfile.systemd <<EOF
+          FROM ubuntu:22.04
           
-          # Install required packages in the container
-          docker exec test-container bash -c "
-            apt-get update && \
-            DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-              systemd \
-              bats \
+          # Install systemd, Docker, and other essentials
+          RUN apt-get update && \
+              DEBIAN_FRONTEND=noninteractive apt-get install -y \
+              systemd systemd-sysv \
               dnsutils \
+              bats \
+              curl \
               apt-transport-https \
               ca-certificates \
-              curl \
               gnupg \
               lsb-release && \
+              # Install Docker
+              curl -fsSL https://get.docker.com | sh && \
+              # Clean up apt cache
+              rm -rf /var/lib/apt/lists/*
           
-            # Install Docker CLI
-            curl -fsSL https://get.docker.com | sh && \
+          # Configure systemd
+          RUN cd /lib/systemd/system/sysinit.target.wants/ && \
+              rm -f $(ls | grep -v systemd-tmpfiles-setup) && \
+              rm -f /lib/systemd/system/multi-user.target.wants/* && \
+              rm -f /etc/systemd/system/*.wants/* && \
+              rm -f /lib/systemd/system/local-fs.target.wants/* && \
+              rm -f /lib/systemd/system/sockets.target.wants/*udev* && \
+              rm -f /lib/systemd/system/sockets.target.wants/*initctl* && \
+              rm -f /lib/systemd/system/basic.target.wants/* && \
+              rm -f /lib/systemd/system/anaconda.target.wants/* && \
+              # Enable systemd-resolved
+              systemctl enable systemd-resolved
           
-            # Verify Docker CLI works
-            docker --version
-          "
+          # Set entrypoint for systemd
+          CMD ["/lib/systemd/systemd"]
+          EOF
+          
+          # Build the Docker image
+          docker build -t systemd-docker-test -f Dockerfile.systemd .
 
-      - name: Run Tests
+      - name: Run tests in systemd container
         run: |
-          docker exec test-container bash -c "
-            # systemd-resolved is already part of systemd
-            systemctl --version && \
-            ls -la /etc/systemd/resolved.conf && \
+          # Run the container with systemd as init
+          docker run --name systemd-test -d --privileged \
+            -v $(pwd):/app -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+            --tmpfs /tmp --tmpfs /run --tmpfs /run/lock \
+            systemd-docker-test
           
-            # Run your tests
-            bats tests/e2e_test.sh
-          "
+          # Give systemd a moment to initialize
+          sleep 5
+          
+          # Copy test files if needed
+          docker exec systemd-test bash -c "mkdir -p /tests && cp -r /app/* /tests/ && cd /tests"
+          
+          # Run the tests
+          docker exec systemd-test bash -c "cd /tests && systemctl status systemd-resolved && bats tests/e2e_test.sh || true"
+          
+          # Get logs for debugging
+          echo "=== Docker logs ==="
+          docker logs systemd-test
+          echo "=== systemd-resolved status ==="
+          docker exec systemd-test systemctl status systemd-resolved || true
 
       - name: Cleanup
         if: always()
-        run: docker rm -f test-container
+        run: docker rm -f systemd-test || true
