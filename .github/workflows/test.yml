@@ -86,16 +86,17 @@ jobs:
       - name: Start systemd container in background
         run: |
           echo "Starting systemd container (${{ env.TEST_OS_IMAGE }}) named ${{ env.CONTAINER_NAME }}..."
-          # --- CORRECTED PATH AGAIN ---
-          # Use the $GITHUB_WORKSPACE environment variable. The shell running this script
-          # (inside the job container) will expand it to the correct path (e.g., /__w/docker-dns/docker-dns).
+          # --- CORRECTED COMMAND ---
+          # Use the direct path to the systemd executable (/lib/systemd/systemd)
+          # as /sbin/init might not exist in the base image.
           podman run -d --name ${{ env.CONTAINER_NAME }} --privileged --cgroupns=host \
             -v "$GITHUB_WORKSPACE":/workdir \
-            ${{ env.TEST_OS_IMAGE }} /sbin/init
-
+            ${{ env.TEST_OS_IMAGE }} /lib/systemd/systemd
+          
           echo "Waiting for systemd to initialize..."
-          sleep 15 # Simple wait
-
+          # Increased sleep slightly as systemd startup can take a moment
+          sleep 20
+          
           # Check if systemd is minimally operational
           if podman exec ${{ env.CONTAINER_NAME }} systemctl list-units > /dev/null; then
              echo "Systemd seems operational. Checking system running state..."
@@ -105,9 +106,12 @@ jobs:
              else
                status=$(podman exec ${{ env.CONTAINER_NAME }} systemctl is-system-running)
                echo "Warning: Systemd might be degraded but continuing... State: $status"
+               # Optional: Dump logs if degraded for debugging
+               # podman exec ${{ env.CONTAINER_NAME }} journalctl -n 50 --no-pager
              fi
           else
              echo "Error: Failed to execute systemctl inside the container. Systemd likely failed to start."
+             # Dump container logs for debugging systemd startup issues
              podman logs ${{ env.CONTAINER_NAME }}
              exit 1
           fi
