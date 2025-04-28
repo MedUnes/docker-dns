@@ -83,6 +83,7 @@ jobs:
           fi
           echo "---"
 
+
       # Add this new step to explicitly pull and inspect the image
       - name: Pull and Inspect Base Image
         run: |
