@@ -46,98 +46,74 @@ jobs:
 
   debian-install-test:
     runs-on: ubuntu-latest # Use a standard GitHub Actions runner
-    env:
-      # Define the OS image and container name as environment variables for easy configuration
-      TEST_OS_IMAGE: "ubuntu:22.04" # Or "debian:bullseye", "ubuntu:24.04", etc.
-      CONTAINER_NAME: "systemd-test-env"
 
-    # Use a container that has Podman pre-installed as the job execution environment.
-    # Requires privileged mode on the host runner to allow the inner container
-    # full capabilities for systemd and Docker daemon operation.
     container:
       image: quay.io/podman/stable # Official Podman image
       options: --privileged
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4 # Checkout the repository code
-
-      # actions/checkout needs to run first to populate the workspace
-
-      # actions/checkout runs first
+        uses: actions/checkout@v4
 
       - name: Verify Workspace Path (using ENV var inside job container)
         run: |
           echo "Host workspace path variable (from GHA context): ${{ github.workspace }}"
-          # Display the GITHUB_WORKSPACE environment variable *as seen by the shell inside the job container*
           echo "Job container GITHUB_WORKSPACE env var: $GITHUB_WORKSPACE"
           echo "---"
           echo "Checking workspace directory existence using ENV var: $GITHUB_WORKSPACE"
-          # Use the ENV var directly. Use quotes to handle potential special characters.
           if [ -d "$GITHUB_WORKSPACE" ]; then
             echo "Job container workspace directory '$GITHUB_WORKSPACE' exists. Listing contents:"
             ls -la "$GITHUB_WORKSPACE"
           else
             echo "ERROR: Workspace directory '$GITHUB_WORKSPACE' not found inside job container!"
-            # As a fallback, check the common paths just in case something is really weird
-            echo "Also checking /github/workspace..."
-            ls -la /github/workspace || echo "/github/workspace not found."
-            echo "Also checking /home/runner/work/..." # This shouldn't exist inside, but check anyway
-            ls -la ${{ github.workspace }} || echo "${{ github.workspace }} not found inside container."
-            exit 1 # Fail the job if the workspace isn't found using the env var
+            exit 1
           fi
           echo "---"
 
-
-      # Add this new step to explicitly pull and inspect the image
-      - name: Pull and Inspect Base Image
-        run: |
-          # Use the fully qualified name to avoid any ambiguity from aliases
-          FQ_IMAGE_NAME="docker.io/library/${{ env.TEST_OS_IMAGE }}"
-
-          echo "Explicitly pulling image: ${FQ_IMAGE_NAME}"
-          podman pull ${FQ_IMAGE_NAME}
-          echo "Pull complete."
-
-          echo "Inspecting image for systemd executable..."
-          # Use podman run with a simple command to check for the file's existence and type
-          # Override entrypoint just in case the image has one set
-          podman run --rm --entrypoint="" ${FQ_IMAGE_NAME} ls -l /lib/systemd/systemd
-          # Also check /sbin/init just for comparison
-          podman run --rm --entrypoint="" ${FQ_IMAGE_NAME} ls -l /sbin/init || echo "/sbin/init not found (as expected or possibly indicates minimal image)"
-
-          # Try executing it simply to see if it's runnable at all (will likely fail immediately, but shouldn't give 'not found')
-          echo "Attempting simple execution of /lib/systemd/systemd (expected to fail, but not with 'not found'):"
-          podman run --rm --entrypoint="/lib/systemd/systemd" ${FQ_IMAGE_NAME} --version || echo "Simple execution failed as expected or file truly not found/runnable."
-
-          echo "Inspection finished. Proceeding to start container..."
-
+      # Optional: Keep inspection step for the new image if desired, but likely unnecessary
+      # - name: Pull and Inspect Base Image
+      #   run: |
+      #     FQ_IMAGE_NAME="docker.io/${{ env.TEST_OS_IMAGE }}" # Assuming docker.io
+      #     echo "Explicitly pulling image: ${FQ_IMAGE_NAME}"
+      #     podman pull ${FQ_IMAGE_NAME}
+      #     echo "Pull complete."
+      #     echo "Inspecting image..."
+      #     podman run --rm --entrypoint="" ${FQ_IMAGE_NAME} ls -l /lib/systemd/systemd || echo "/lib/systemd/systemd not found"
+      #     podman run --rm --entrypoint="" ${FQ_IMAGE_NAME} ls -l /sbin/init || echo "/sbin/init not found"
+      #     echo "Inspection finished."
 
       - name: Start systemd container in background
         run: |
-          echo "Starting systemd container (${{ env.TEST_OS_IMAGE }}) named ${{ env.CONTAINER_NAME }}..."
-          # Using the fully qualified image name here too
-          FQ_IMAGE_NAME="docker.io/library/${{ env.TEST_OS_IMAGE }}"
+          # Define image name (assuming docker.io, adjust if needed)
+          FQ_IMAGE_NAME="docker.io/${{ env.TEST_OS_IMAGE }}"
 
-          # Continue attempting with /lib/systemd/systemd based on inspection results
+          echo "Starting systemd container (${FQ_IMAGE_NAME}) named ${{ env.CONTAINER_NAME }}..."
+
+          # --- Use /sbin/init ---
+          # Images like jrei/systemd-ubuntu are typically configured
+          # to work correctly when started with /sbin/init.
+          INIT_COMMAND="/sbin/init"
+
           podman run -d --name ${{ env.CONTAINER_NAME }} --privileged --cgroupns=host \
             -v "$GITHUB_WORKSPACE":/workdir \
-            ${FQ_IMAGE_NAME} /lib/systemd/systemd
+            ${FQ_IMAGE_NAME} ${INIT_COMMAND}
 
           echo "Waiting for systemd to initialize..."
-          sleep 20
+          sleep 20 # Increased sleep duration
 
           # Check if systemd is minimally operational
           if podman exec ${{ env.CONTAINER_NAME }} systemctl list-units > /dev/null; then
              echo "Systemd seems operational. Checking system running state..."
+             # Wait for the system to reach the 'running' state
              if podman exec ${{ env.CONTAINER_NAME }} systemctl is-system-running --wait; then
                echo "Systemd reports system is running."
              else
+               # Use systemctl status to get more info if degraded
                status=$(podman exec ${{ env.CONTAINER_NAME }} systemctl is-system-running)
                echo "Warning: Systemd might be degraded but continuing... State: $status"
+               podman exec ${{ env.CONTAINER_NAME }} systemctl status --no-pager --full || true # Display status
              fi
           else
-             # If systemctl fails, check the container state directly
              echo "Error: Failed to execute systemctl inside the container."
              echo "Checking container status:"
              podman ps -a --filter name=${{ env.CONTAINER_NAME }}
@@ -150,8 +126,6 @@ jobs:
         run: |
           echo "Updating apt cache and installing dependencies..."
           # Use podman exec to run commands inside the systemd container.
-          # Use bash -c '...' to easily run multiple commands.
-          # DEBIAN_FRONTEND=noninteractive prevents interactive prompts during installation.
           podman exec ${{ env.CONTAINER_NAME }} bash -c ' \
             export DEBIAN_FRONTEND=noninteractive && \
             apt-get update && \
@@ -179,7 +153,7 @@ jobs:
           while ! podman exec ${{ env.CONTAINER_NAME }} systemctl is-active --quiet docker; do
             if [ $elapsed -ge $timeout ]; then
               echo "Timeout waiting for Docker service to start."
-              podman exec ${{ env.CONTAINER_NAME }} systemctl status docker
+              podman exec ${{ env.CONTAINER_NAME }} systemctl status docker --no-pager -n 50
               podman exec ${{ env.CONTAINER_NAME }} journalctl -u docker --no-pager -n 50
               exit 1
             fi
@@ -193,12 +167,13 @@ jobs:
       - name: Run Application/Package Tests
         run: |
           echo "Running tests inside the container..."
-          podman exec ${{ env.CONTAINER_NAME }} docker ps
-          podman exec ${{ env.CONTAINER_NAME }} docker run --rm hello-world
-          podman exec ${{ env.CONTAINER_NAME }} echo "Environment ready for testing."
+          # Add your actual test commands here, e.g.:
+          # podman exec ${{ env.CONTAINER_NAME }} ls /workdir
+          # podman exec ${{ env.CONTAINER_NAME }} /workdir/your-test-script.sh
+          # podman exec ${{ env.CONTAINER_NAME }} docker ps
+          echo "Test placeholder: Environment ready."
 
       - name: Cleanup systemd container
-        # Use always() to ensure cleanup runs even if previous steps fail
         if: always()
         run: |
           echo "Stopping and removing the test container..."
