@@ -58,7 +58,7 @@ jobs:
         uses: actions/checkout@v4 # Checkout the repository code
 
       # actions/checkout needs to run first to populate the workspace
-      
+
       # actions/checkout runs first
 
       - name: Verify Workspace Path (using ENV var inside job container)
@@ -83,35 +83,59 @@ jobs:
           fi
           echo "---"
 
+      # Add this new step to explicitly pull and inspect the image
+      - name: Pull and Inspect Base Image
+        run: |
+          # Use the fully qualified name to avoid any ambiguity from aliases
+          FQ_IMAGE_NAME="docker.io/library/${{ env.TEST_OS_IMAGE }}"
+
+          echo "Explicitly pulling image: ${FQ_IMAGE_NAME}"
+          podman pull ${FQ_IMAGE_NAME}
+          echo "Pull complete."
+
+          echo "Inspecting image for systemd executable..."
+          # Use podman run with a simple command to check for the file's existence and type
+          # Override entrypoint just in case the image has one set
+          podman run --rm --entrypoint="" ${FQ_IMAGE_NAME} ls -l /lib/systemd/systemd
+          # Also check /sbin/init just for comparison
+          podman run --rm --entrypoint="" ${FQ_IMAGE_NAME} ls -l /sbin/init || echo "/sbin/init not found (as expected or possibly indicates minimal image)"
+
+          # Try executing it simply to see if it's runnable at all (will likely fail immediately, but shouldn't give 'not found')
+          echo "Attempting simple execution of /lib/systemd/systemd (expected to fail, but not with 'not found'):"
+          podman run --rm --entrypoint="/lib/systemd/systemd" ${FQ_IMAGE_NAME} --version || echo "Simple execution failed as expected or file truly not found/runnable."
+
+          echo "Inspection finished. Proceeding to start container..."
+
+
       - name: Start systemd container in background
         run: |
           echo "Starting systemd container (${{ env.TEST_OS_IMAGE }}) named ${{ env.CONTAINER_NAME }}..."
-          # --- CORRECTED COMMAND ---
-          # Use the direct path to the systemd executable (/lib/systemd/systemd)
-          # as /sbin/init might not exist in the base image.
+          # Using the fully qualified image name here too
+          FQ_IMAGE_NAME="docker.io/library/${{ env.TEST_OS_IMAGE }}"
+
+          # Continue attempting with /lib/systemd/systemd based on inspection results
           podman run -d --name ${{ env.CONTAINER_NAME }} --privileged --cgroupns=host \
             -v "$GITHUB_WORKSPACE":/workdir \
-            ${{ env.TEST_OS_IMAGE }} /lib/systemd/systemd
-          
+            ${FQ_IMAGE_NAME} /lib/systemd/systemd
+
           echo "Waiting for systemd to initialize..."
-          # Increased sleep slightly as systemd startup can take a moment
           sleep 20
-          
+
           # Check if systemd is minimally operational
           if podman exec ${{ env.CONTAINER_NAME }} systemctl list-units > /dev/null; then
              echo "Systemd seems operational. Checking system running state..."
-             # Wait for the system to reach the 'running' state
              if podman exec ${{ env.CONTAINER_NAME }} systemctl is-system-running --wait; then
                echo "Systemd reports system is running."
              else
                status=$(podman exec ${{ env.CONTAINER_NAME }} systemctl is-system-running)
                echo "Warning: Systemd might be degraded but continuing... State: $status"
-               # Optional: Dump logs if degraded for debugging
-               # podman exec ${{ env.CONTAINER_NAME }} journalctl -n 50 --no-pager
              fi
           else
-             echo "Error: Failed to execute systemctl inside the container. Systemd likely failed to start."
-             # Dump container logs for debugging systemd startup issues
+             # If systemctl fails, check the container state directly
+             echo "Error: Failed to execute systemctl inside the container."
+             echo "Checking container status:"
+             podman ps -a --filter name=${{ env.CONTAINER_NAME }}
+             echo "Dumping container logs:"
              podman logs ${{ env.CONTAINER_NAME }}
              exit 1
           fi
