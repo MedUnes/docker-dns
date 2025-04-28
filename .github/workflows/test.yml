@@ -168,10 +168,15 @@ jobs:
         run: |
           echo "Running tests inside the container..."
           # Add your actual test commands here, e.g.:
-          # podman exec ${{ env.CONTAINER_NAME }} ls /workdir
+          podman exec ${{ env.CONTAINER_NAME }} ls /workdir
+          podman exec ${{ env.CONTAINER_NAME }} docker ps
           # podman exec ${{ env.CONTAINER_NAME }} /workdir/your-test-script.sh
-          # podman exec ${{ env.CONTAINER_NAME }} docker ps
           echo "Test placeholder: Environment ready."
+          podman exec ${{ env.CONTAINER_NAME }} wget https://raw.githubusercontent.com/MedUnes/docker-dns/master/install_debian_latest.sh /workdir/install_debian_latest.sh
+          podman exec ${{ env.CONTAINER_NAME }} chmod +x /workdir/install_debian_latest.sh
+          podman exec ${{ env.CONTAINER_NAME }} /workdir/install_debian_latest.sh
+          podman exec ${{ env.CONTAINER_NAME }} rm /workdir/install_debian_latest.sh
+          podman exec ${{ env.CONTAINER_NAME }} systemctl status docker-dns.service --no-pager -n 50
 
       - name: Cleanup systemd container
         if: always()
