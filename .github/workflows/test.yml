@@ -57,19 +57,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4 # Checkout the repository code
 
-# Add this step for debugging path issues
-      - name: Verify Workspace Path
+# actions/checkout needs to run first to populate the workspace
+
+      - name: Verify Workspace Path (inside job container)
+        # This step now checks the correct path within the job container
         run: |
-          echo "Workspace environment variable: ${{ github.workspace }}"
-          echo "Listing contents of workspace parent: /home/runner/work/docker-dns"
-          ls -la /home/runner/work/docker-dns || echo "Parent directory listing failed."
+          echo "Host workspace path variable: ${{ github.workspace }}"
+          echo "Expected path inside JOB CONTAINER: /github/workspace"
           echo "---"
-          echo "Checking workspace directory existence: ${{ github.workspace }}"
-          if [ -d "${{ github.workspace }}" ]; then
-            echo "Workspace directory exists. Listing contents:"
-            ls -la ${{ github.workspace }}
+          echo "Checking workspace directory existence inside job container: /github/workspace"
+          # Check the standard mount point for the workspace inside a job container
+          if [ -d "/github/workspace" ]; then
+            echo "Job container workspace directory '/github/workspace' exists. Listing contents:"
+            ls -la /github/workspace
           else
-            echo "ERROR: Workspace directory ${{ github.workspace }} not found!"
+            echo "ERROR: Workspace directory /github/workspace not found inside job container!"
+            # Also check GITHUB_WORKSPACE env var *inside* the container if it exists
+            echo "(Env var GITHUB_WORKSPACE inside container is: $GITHUB_WORKSPACE)" # Might still be the host path or unset
             exit 1 # Fail the job if the workspace isn't found
           fi
           echo "---"
@@ -77,38 +81,34 @@ jobs:
       - name: Start systemd container in background
         run: |
           echo "Starting systemd container (${{ env.TEST_OS_IMAGE }}) named ${{ env.CONTAINER_NAME }}..."
-          # Use the GHA variable ${{ github.workspace }} directly for the volume mount source.
+          # --- CORRECTED PATH ---
+          # Use the standard job container workspace path /github/workspace as the source for the volume mount.
+          # This mounts the code from the job container into the inner systemd container at /workdir.
           podman run -d --name ${{ env.CONTAINER_NAME }} --privileged --cgroupns=host \
-            -v ${{ github.workspace }}:/workdir \
+            -v /github/workspace:/workdir \
             ${{ env.TEST_OS_IMAGE }} /sbin/init
 
           echo "Waiting for systemd to initialize..."
-          # Wait briefly for systemd to start essential services before proceeding.
-          # A more robust check would be to loop 'podman exec systemctl is-system-running --wait'
-          # but requires handling potential initial "starting" or "degraded" states.
-          sleep 15
-          # Use -- KEEPINFRALOGGING=true as seen in docker.io/library/ubuntu:22.04 metadata or just try to wait a bit and check if systemctl is runing and working
-          # systemctl check
-          # podman exec ${{ env.CONTAINER_NAME }} systemctl is-system-running --wait || echo "Systemd might be degraded but continuing..."
-          # Check if systemd is minimally operational by running a simple systemctl command
-          # If this fails, the container likely didn't initialize systemd correctly.
+          sleep 15 # Simple wait
+
+          # Check if systemd is minimally operational
           if podman exec ${{ env.CONTAINER_NAME }} systemctl list-units > /dev/null; then
              echo "Systemd seems operational. Checking system running state..."
-             # now wait for the system state (it might take a few seconds)
+             # Wait for the system to reach the 'running' state
              if podman exec ${{ env.CONTAINER_NAME }} systemctl is-system-running --wait; then
                echo "Systemd reports system is running."
              else
                status=$(podman exec ${{ env.CONTAINER_NAME }} systemctl is-system-running)
                echo "Warning: Systemd might be degraded but continuing... State: $status"
-               # Optional: Dump logs if degraded
+               # Optional: Dump logs if degraded for debugging
                # podman exec ${{ env.CONTAINER_NAME }} journalctl -n 50 --no-pager
              fi
           else
              echo "Error: Failed to execute systemctl inside the container. Systemd likely failed to start."
-             # Dump container logs for debugging
+             # Dump container logs for debugging systemd startup issues
              podman logs ${{ env.CONTAINER_NAME }}
              exit 1
-          fi
+          fi    
       - name: Install dependencies (Docker, Docker Compose) inside the container
         run: |
           echo "Updating apt cache and installing dependencies..."
