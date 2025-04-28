@@ -133,6 +133,11 @@ jobs:
               docker.io \
               docker-compose-v2 \
               curl \
+              wget \
+              bash \
+              jq \
+              net-tools \
+              dnsutils \
               git \
               ca-certificates \
               sudo && \
