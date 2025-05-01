@@ -171,10 +171,6 @@ jobs:
           podman exec ${{ env.CONTAINER_NAME }} systemctl status docker-dns.service --no-pager -n 50
           podman exec ${{ env.CONTAINER_NAME }} docker run -d --name nginx nginx:alpine
           podman exec ${{ env.CONTAINER_NAME }} sleep 1
-      - name: Run Install Debian Package
-        run: |
-          podman exec ${{ env.CONTAINER_NAME }} docker run -d --name nginx nginx:alpine
-          podman exec ${{ env.CONTAINER_NAME }} sleep 1
       - name: Test Direct Internal Resolution
         run: |
           podman exec ${{ env.CONTAINER_NAME }} address="$(dig @127.0.0.153 nginx.docker +short | head -1 || (echo "Internal DNS resolution against 127.0.0.153 failed" && exit 1))"
