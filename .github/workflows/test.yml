@@ -70,17 +70,7 @@ jobs:
           fi
           echo "---"
 
-      # Optional: Keep inspection step for the new image if desired, but likely unnecessary
-      # - name: Pull and Inspect Base Image
-      #   run: |
-      #     FQ_IMAGE_NAME="docker.io/${{ env.TEST_OS_IMAGE }}" # Assuming docker.io
-      #     echo "Explicitly pulling image: ${FQ_IMAGE_NAME}"
-      #     podman pull ${FQ_IMAGE_NAME}
-      #     echo "Pull complete."
-      #     echo "Inspecting image..."
-      #     podman run --rm --entrypoint="" ${FQ_IMAGE_NAME} ls -l /lib/systemd/systemd || echo "/lib/systemd/systemd not found"
-      #     podman run --rm --entrypoint="" ${FQ_IMAGE_NAME} ls -l /sbin/init || echo "/sbin/init not found"
-      #     echo "Inspection finished."
+
 
       - name: Start systemd container in background
         run: |
@@ -170,7 +160,7 @@ jobs:
           echo "Docker service is active."
           podman exec ${{ env.CONTAINER_NAME }} docker info # Verify docker is running
 
-      - name: Run Application/Package Tests
+      - name: Run Install Debian Package
         run: |
           echo "Running tests inside the container..."
           # Add your actual test commands here, e.g.:
@@ -179,11 +169,29 @@ jobs:
           podman exec ${{ env.CONTAINER_NAME }} chmod +x /workdir/install_debian_latest.sh
           podman exec ${{ env.CONTAINER_NAME }} /workdir/install_debian_latest.sh
           podman exec ${{ env.CONTAINER_NAME }} systemctl status docker-dns.service --no-pager -n 50
-          podman exec ${{ env.CONTAINER_NAME }} /workdir/tests/e2e_test.sh
-      - name: Cleanup systemd container
-        if: always()
+          podman exec ${{ env.CONTAINER_NAME }} docker run -d --name nginx nginx:alpine
+          podman exec ${{ env.CONTAINER_NAME }} sleep 1
+      - name: Run Install Debian Package
         run: |
-          echo "Stopping and removing the test container..."
-          podman stop ${{ env.CONTAINER_NAME }} || echo "Failed to stop container (may already be stopped)"
-          podman rm ${{ env.CONTAINER_NAME }} || echo "Failed to remove container (may already be removed)"
-          echo "Cleanup complete."
+          podman exec ${{ env.CONTAINER_NAME }} docker run -d --name nginx nginx:alpine
+          podman exec ${{ env.CONTAINER_NAME }} sleep 1
+      - name: Test Direct Internal Resolution
+        run: |
+          podman exec ${{ env.CONTAINER_NAME }} address="$(dig @127.0.0.153 nginx.docker +short | head -1 || (echo "Internal DNS resolution against 127.0.0.153 failed" && exit 1))"
+          podman exec ${{ env.CONTAINER_NAME }} [[ $address =~ ([0-9]{1,3}\.){3}[0-9]{1,3} ]] || (echo "Internal DNS resolution against 127.0.0.153 returned an unexpected value" && exit 1)
+          podman exec ${{ env.CONTAINER_NAME }} echo "nginx.docker : $address"
+      - name: Test Integrated Internal Resolution (systemd-resolved)
+        run: |          
+          podman exec ${{ env.CONTAINER_NAME }} address="$(dig nginx.docker +short | head -1 || (echo "Internal DNS resolution through systemd-resolved failed" && exit 1))"
+          podman exec ${{ env.CONTAINER_NAME }} [[ $address =~ ([0-9]{1,3}\.){3}[0-9]{1,3} ]] || (echo "Internal DNS resolution through systemd-resolved returned an unexpected value" && exit 1)
+          podman exec ${{ env.CONTAINER_NAME }} echo "nginx.docker : $address"
+      - name: Test Direct External Resolution
+        run: |
+          podman exec ${{ env.CONTAINER_NAME }} address="$(dig @127.0.0.153 google.com +short | head -1 || (echo "External DNS resolution against 127.0.0.153 failed" && exit 1))"
+          podman exec ${{ env.CONTAINER_NAME }} [[ $address =~ ([0-9]{1,3}\.){3}[0-9]{1,3} ]] || (echo "External DNS resolution against 127.0.0.153 returned an unexpected value" && exit 1)
+          podman exec ${{ env.CONTAINER_NAME }} echo "google.com : $address"
+      - name: Test Integrated External Resolution (systemd-resolved)
+        run: |
+          podman exec ${{ env.CONTAINER_NAME }} address="$(dig google.com +short | head -1 || (echo "External DNS resolution through systemd-resolved failed" && exit 1))"
+          podman exec ${{ env.CONTAINER_NAME }} [[ $address =~ ([0-9]{1,3}\.){3}[0-9]{1,3} ]] || (echo "External DNS resolution through systemd-resolved returned an unexpected value" && exit 1)
+          podman exec ${{ env.CONTAINER_NAME }} echo "google.com : $address"
