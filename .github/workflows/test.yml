@@ -179,7 +179,7 @@ jobs:
           podman exec ${{ env.CONTAINER_NAME }} chmod +x /workdir/install_debian_latest.sh
           podman exec ${{ env.CONTAINER_NAME }} /workdir/install_debian_latest.sh
           podman exec ${{ env.CONTAINER_NAME }} systemctl status docker-dns.service --no-pager -n 50
-
+          podman exec ${{ env.CONTAINER_NAME }} /workdir/tests/e2e_test.sh
       - name: Cleanup systemd container
         if: always()
         run: |
