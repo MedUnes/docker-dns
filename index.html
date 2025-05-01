@@ -238,20 +238,26 @@
 <body class="bg-gray-900 text-gray-200 leading-relaxed">
 <div class="container mx-auto py-16 sm:py-20">
 
-    <header class="mb-16 sm:mb-20 text-center border-b pb-10 sm:pb-12 border-gray-700"> <img src="logo.png" alt="docker-dns logo" class="logo mx-auto block">
-        <h1 class="text-3xl sm:text-4xl font-bold mb-4">docker-dns</h1>
-        <p class="text-lg sm:text-xl mb-6">Simplifying Docker Networking - Resolve Containers by Name</p>
-        <div class="mt-5 mb-8 space-x-3">
-            <a href="https://github.com/medunes/docker-dns/blob/master/LICENSE" target="_blank" rel="noopener noreferrer">
-                <img src="https://img.shields.io/github/license/medunes/docker-dns?style=flat-square&theme=dark" alt="GitHub license">
-            </a>
-            <a href="https://github.com/medunes/docker-dns/issues" target="_blank" rel="noopener noreferrer">
-                <img src="https://img.shields.io/github/issues/medunes/docker-dns?style=flat-square&theme=dark" alt="GitHub issues">
-            </a>
-        </div>
-        <p class="mt-6 text-base px-4 sm:px-0">Navigating the intricacies of networking in Docker environments can often feel like deciphering a complex puzzle. This document provides comprehensive documentation for the docker-dns project.</p>
-    </header>
-
+        <header class="mb-16 sm:mb-20 text-center border-b pb-10 sm:pb-12 border-gray-700">
+            <img src="logo.png" alt="docker-dns logo" class="logo mx-auto block">
+            <h1 class="text-3xl sm:text-4xl font-bold mb-4">Docker DNS Resolver</h1> <p class="text-lg sm:text-xl mb-6">A lightweight DNS server that resolves Docker container names to their IP addresses, enabling seamless networking between containers and the host.</p> <div class="mt-5 mb-8 space-x-3 flex flex-wrap justify-center gap-2">
+                <a href="https://github.com/MedUnes/docker-dns/actions/workflows/test.yml" target="_blank" rel="noopener noreferrer">
+                    <img src="https://github.com/MedUnes/docker-dns/actions/workflows/test.yml/badge.svg" alt="Tests Status">
+                </a>
+                <a href="https://github.com/MedUnes/docker-dns/actions/workflows/release.yml" target="_blank" rel="noopener noreferrer">
+                    <img src="https://github.com/MedUnes/docker-dns/actions/workflows/release.yml/badge.svg" alt="Release Status">
+                </a>
+                <a href="https://goreportcard.com/report/github.com/medunes/docker-dns" target="_blank" rel="noopener noreferrer">
+                    <img src="https://goreportcard.com/badge/github.com/medunes/docker-dns" alt="Go Report Card">
+                </a>
+                <a href="https://github.com/medunes/docker-dns/blob/master/LICENSE" target="_blank" rel="noopener noreferrer">
+                    <img src="https://img.shields.io/github/license/medunes/docker-dns?style=flat-square&theme=dark" alt="License">
+                </a>
+                 <a href="https://pkg.go.dev/github.com/medunes/docker-dns" target="_blank" rel="noopener noreferrer">
+                    <img src="https://pkg.go.dev/badge/github.com/medunes/docker-dns.svg" alt="Go Reference">
+                </a>
+            </div>
+            </header>
     <main>
 
         <section id="problem">
