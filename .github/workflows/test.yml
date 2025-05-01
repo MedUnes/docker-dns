@@ -178,16 +178,16 @@ jobs:
           echo "nginx.docker : $address"
       - name: Test Integrated Internal Resolution (systemd-resolved)
         run: |          
-          podman exec ${{ env.CONTAINER_NAME }} address="$(dig nginx.docker +short | head -1 || (echo "Internal DNS resolution through systemd-resolved failed" && exit 1))"
-          podman exec ${{ env.CONTAINER_NAME }} [[ $address =~ ([0-9]{1,3}\.){3}[0-9]{1,3} ]] || (echo "Internal DNS resolution through systemd-resolved returned an unexpected value" && exit 1)
-          podman exec ${{ env.CONTAINER_NAME }} echo "nginx.docker : $address"
+          address="$(podman exec ${{ env.CONTAINER_NAME }} dig nginx.docker +short | head -1 || (echo "Internal DNS resolution through systemd-resolved failed" && exit 1))"
+          [[ $address =~ ([0-9]{1,3}\.){3}[0-9]{1,3} ]] || (echo "Internal DNS resolution through systemd-resolved returned an unexpected value" && exit 1)
+          echo "nginx.docker : $address"
       - name: Test Direct External Resolution
         run: |
-          podman exec ${{ env.CONTAINER_NAME }} address="$(dig @127.0.0.153 google.com +short | head -1 || (echo "External DNS resolution against 127.0.0.153 failed" && exit 1))"
-          podman exec ${{ env.CONTAINER_NAME }} [[ $address =~ ([0-9]{1,3}\.){3}[0-9]{1,3} ]] || (echo "External DNS resolution against 127.0.0.153 returned an unexpected value" && exit 1)
-          podman exec ${{ env.CONTAINER_NAME }} echo "google.com : $address"
+          address="$(podman exec ${{ env.CONTAINER_NAME }} dig @127.0.0.153 google.com +short | head -1 || (echo "External DNS resolution against 127.0.0.153 failed" && exit 1))"
+          [[ $address =~ ([0-9]{1,3}\.){3}[0-9]{1,3} ]] || (echo "External DNS resolution against 127.0.0.153 returned an unexpected value" && exit 1)
+          echo "google.com : $address"
       - name: Test Integrated External Resolution (systemd-resolved)
         run: |
-          podman exec ${{ env.CONTAINER_NAME }} address="$(dig google.com +short | head -1 || (echo "External DNS resolution through systemd-resolved failed" && exit 1))"
-          podman exec ${{ env.CONTAINER_NAME }} [[ $address =~ ([0-9]{1,3}\.){3}[0-9]{1,3} ]] || (echo "External DNS resolution through systemd-resolved returned an unexpected value" && exit 1)
-          podman exec ${{ env.CONTAINER_NAME }} echo "google.com : $address"
+          address="$(podman exec ${{ env.CONTAINER_NAME }}  dig google.com +short | head -1 || (echo "External DNS resolution through systemd-resolved failed" && exit 1))"
+          [[ $address =~ ([0-9]{1,3}\.){3}[0-9]{1,3} ]] || (echo "External DNS resolution through systemd-resolved returned an unexpected value" && exit 1)
+          echo "google.com : $address"
