@@ -70,8 +70,6 @@ jobs:
           fi
           echo "---"
 
-
-
       - name: Start systemd container in background
         run: |
           # Define image name (assuming docker.io, adjust if needed)
@@ -164,6 +162,8 @@ jobs:
         run: |
           echo "Running tests inside the container..."
           # Add your actual test commands here, e.g.:
+          podman exec ${{ env.CONTAINER_NAME }} resolvectl status
+          podman exec ${{ env.CONTAINER_NAME }} service systemd-resolved status
           podman exec ${{ env.CONTAINER_NAME }} ls /workdir
           podman exec ${{ env.CONTAINER_NAME }} docker ps
           podman exec ${{ env.CONTAINER_NAME }} chmod +x /workdir/install_debian_latest.sh
