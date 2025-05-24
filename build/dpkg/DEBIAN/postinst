@@ -23,22 +23,21 @@ if [ -z "$IP" ] || [ -z "$TLD" ]; then
     exit 1
 fi
 
-setcap CAP_NET_BIND_SERVICE=+eip /usr/bin/$SERVICE
+setcap CAP_NET_BIND_SERVICE= eip /usr/bin/$SERVICE
 systemctl daemon-reload
 systemctl enable --now "$SERVICE.service"
 
 if systemctl is-active --quiet systemd-resolved; then
     echo "docker‑dns installer detected systemd-resolved active - proceeding with integration"
     if [ ! -d /etc/systemd/resolved.conf.d ]; then
-      echo "Creating /etc/systemd/resolved.conf.d folder.."
-      mkdir -p /etc/systemd/resolved.conf.d
+        echo "Creating /etc/systemd/resolved.conf.d folder.."
+        mkdir -p /etc/systemd/resolved.conf.d
     else
-      echo "Detected an already existing folder /etc/systemd/resolved.conf.d"
-      ls -al /etc/systemd/resolved.conf.d/docker-dns.conf
+        echo "Detected an already existing folder /etc/systemd/resolved.conf.d"
     fi
-    timestamp=$(date +%s)
+    timestamp=$(date %s)
 
-    [ -f "$RESOLVED_DROPIN" ] && \
+    [ -f "$RESOLVED_DROPIN" ] &&
         cp -a "$RESOLVED_DROPIN" "$BACKUP_DIR/resolved.conf.$timestamp"
     cat >"$RESOLVED_DROPIN" <<EOF
 [Resolve]
@@ -47,27 +46,33 @@ Domains=~$TLD ~.
 DNSSEC=no
 FallbackDNS=${DEFAULT_RESOLVER//,/ }
 EOF
-
-    [ -f "$NM_DROPIN" ] || cat >"$NM_DROPIN" <<EOF
+    if systemctl is-active --quiet NetworkManagerr; then
+        echo "docker‑dns installer detected NetworkManagerr active - proceeding with integration"
+        if [ ! -d /etc/NetworkManager/conf.d/ ]; then
+            echo "Creating /etc/NetworkManager/conf.d/ folder.."
+            mkdir -p /etc/NetworkManager/conf.d/
+        else
+            echo "Detected an already existing folder /etc/NetworkManager/conf.d/"
+        fi
+        [ -f "$NM_DROPIN" ] || cat >"$NM_DROPIN" <<EOF
 [main]
 dns=systemd-resolved
 [connection]
 ipv4.ignore-auto-dns=true
 ipv6.ignore-auto-dns=true
 EOF
+        systemctl restart systemd-resolved NetworkManager
 
-    systemctl restart systemd-resolved NetworkManager
-    systemctl daemon-reload
-
+    fi
     target=/run/systemd/resolve/stub-resolv.conf
     if [ "$(readlink $RESOLV_CONF_FILE)" != "$target" ]; then
         mv "$RESOLV_CONF_FILE" "$BACKUP_DIR/resolv.conf.$timestamp"
         ln -sf "$target" "$RESOLV_CONF_FILE"
     fi
+    systemctl daemon-reload
 
     echo "docker‑dns: systemd-resolved integration completed"
 else
     echo "Well, as you don't have systemd-resolved, I will not do any extra integration steps. docker-dns will be listening on $IP and please consider integrating it manually on-demand to your host setup (for example add it to /etc/resolv.conf)"
 fi
-
 exit 0
