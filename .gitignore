@@ -2,3 +2,4 @@ bin/*
 !bin/.gitkeep
 docker-dns
 build/dpkg/tmp_download
+.idea
