@@ -167,10 +167,9 @@ jobs:
           podman exec ${{ env.CONTAINER_NAME }} service systemd-resolved status
           podman exec ${{ env.CONTAINER_NAME }} ls /workdir
           podman exec ${{ env.CONTAINER_NAME }} docker ps
-          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "cd /workdir/build/dpkg"
-          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c"  export NUMERIC_VERSION=$(echo "${{ github.ref_name }}" | sed  "s/v//g")
-          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c"  echo "NUMERIC_VERSION=${NUMERIC_VERSION}" >> $GITHUB_ENV
-          podman exec ${{ env.CONTAINER_NAME }}  "bash" "-c"  "./build.sh  ${{ github.repository_owner }} ${{ github.event.repository.name }} ${{ github.ref_name }}"
+          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" export NUMERIC_VERSION=$(echo "${{ github.ref_name }}" | sed  "s/v//g")
+          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" echo "NUMERIC_VERSION=${NUMERIC_VERSION}" >> $GITHUB_ENV
+          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "cd /workdir/build/dpkg && ./build.sh  ${{ github.repository_owner }} ${{ github.event.repository.name }} ${{ github.ref_name }}"
           # podman exec ${{ env.CONTAINER_NAME }} chmod +x /workdir/install_debian_latest.sh
           # podman exec ${{ env.CONTAINER_NAME }} /workdir/install_debian_latest.sh
           podman exec ${{ env.CONTAINER_NAME }} systemctl status docker-dns.service --no-pager -n 50
