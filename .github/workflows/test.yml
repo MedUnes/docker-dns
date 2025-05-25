@@ -1,9 +1,6 @@
 name: Test Pipeline
 
 on: [ push, pull_request ]
-env:
-  CONTAINER_NAME: "systemd-test-env"
-
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
