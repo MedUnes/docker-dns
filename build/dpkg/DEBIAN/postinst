@@ -35,7 +35,7 @@ if systemctl is-active --quiet systemd-resolved; then
     else
         echo "Detected an already existing folder /etc/systemd/resolved.conf.d"
     fi
-    timestamp=$(date %s)
+    timestamp=$(date +%s)
 
     [ -f "$RESOLVED_DROPIN" ] &&
         cp -a "$RESOLVED_DROPIN" "$BACKUP_DIR/resolved.conf.$timestamp"
@@ -62,7 +62,6 @@ ipv4.ignore-auto-dns=true
 ipv6.ignore-auto-dns=true
 EOF
         systemctl restart systemd-resolved NetworkManager
-
     fi
     target=/run/systemd/resolve/stub-resolv.conf
     if [ "$(readlink $RESOLV_CONF_FILE)" != "$target" ]; then
