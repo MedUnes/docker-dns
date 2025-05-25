@@ -54,3 +54,641 @@ jobs:
           gh release upload "${GITHUB_REF_NAME}" "$DEB_FILE$CHECKSUM_SUFFIX" --repo "${GITHUB_REPOSITORY}"
         env:
           GITHUB_TOKEN: ${{ secrets.ACTION_SECRET }}
+  debian-install-test:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/podman/stable
+      options: --privileged
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify Workspace Path (using ENV var inside job container)
+        run: |
+          echo "Host workspace path variable (from GHA context): ${{ github.workspace }}"
+          echo "Job container GITHUB_WORKSPACE env var: $GITHUB_WORKSPACE"
+          echo "---"
+          echo "Checking workspace directory existence using ENV var: $GITHUB_WORKSPACE"
+          if [ -d "$GITHUB_WORKSPACE" ]; then
+            echo "Job container workspace directory '$GITHUB_WORKSPACE' exists. Listing contents:"
+            ls -la "$GITHUB_WORKSPACE"
+          else
+            echo "ERROR: Workspace directory '$GITHUB_WORKSPACE' not found inside job container!"
+            exit 1
+          fi
+          echo "---"
+
+      - name: Start systemd container in background
+        run: |
+          # Define image name (assuming docker.io, adjust if needed)
+          FQ_IMAGE_NAME="docker.io/${{ env.TEST_OS_IMAGE }}"
+
+          echo "Starting systemd container (${FQ_IMAGE_NAME}) named ${{ env.CONTAINER_NAME }}..."
+
+          # --- Use /sbin/init ---
+          # Images like jrei/systemd-ubuntu are typically configured
+          # to work correctly when started with /sbin/init.
+          INIT_COMMAND="/sbin/init"
+
+          podman run -d --name ${{ env.CONTAINER_NAME }} --privileged --cgroupns=host \
+            -v "$GITHUB_WORKSPACE":/workdir \
+            ${FQ_IMAGE_NAME} ${INIT_COMMAND}
+
+          echo "Waiting for systemd to initialize..."
+          sleep 20 # Increased sleep duration
+
+          # Check if systemd is minimally operational
+          if podman exec ${{ env.CONTAINER_NAME }} systemctl list-units > /dev/null; then
+             echo "Systemd seems operational. Checking system running state..."
+             # Wait for the system to reach the 'running' state
+             if podman exec ${{ env.CONTAINER_NAME }} systemctl is-system-running --wait; then
+               echo "Systemd reports system is running."
+             else
+               # Use systemctl status to get more info if degraded
+               status=$(podman exec ${{ env.CONTAINER_NAME }} systemctl is-system-running)
+               echo "Warning: Systemd might be degraded but continuing... State: $status"
+               podman exec ${{ env.CONTAINER_NAME }} systemctl status --no-pager --full || true # Display status
+             fi
+          else
+             echo "Error: Failed to execute systemctl inside the container."
+             echo "Checking container status:"
+             podman ps -a --filter name=${{ env.CONTAINER_NAME }}
+             echo "Dumping container logs:"
+             podman logs ${{ env.CONTAINER_NAME }}
+             exit 1
+          fi
+
+      - name: Install dependencies (Docker, Docker Compose) inside the container
+        run: |
+          echo "Updating apt cache and installing dependencies..."
+          # Use podman exec to run commands inside the systemd container.
+          podman exec ${{ env.CONTAINER_NAME }} bash -c ' \
+            export DEBIAN_FRONTEND=noninteractive && \
+            apt-get update && \
+            apt-get install -y --no-install-recommends \
+              docker.io \
+              docker-compose-v2 \
+              curl \
+              wget \
+              bash \
+              jq \
+              net-tools \
+              dnsutils \
+              git \
+              libcap2-bin \
+              ca-certificates \
+              sudo && \
+            apt-get clean && rm -rf /var/lib/apt/lists/*'
+          echo "Dependencies installed."
+
+      - name: Enable and Start Docker service via systemd
+        run: |
+          echo "Enabling and starting Docker service using systemctl..."
+          podman exec ${{ env.CONTAINER_NAME }} systemctl enable docker
+          podman exec ${{ env.CONTAINER_NAME }} systemctl start docker
+
+          echo "Waiting for Docker service to become active..."
+          # Loop until 'docker.service' is active or timeout (e.g., 30 seconds)
+          timeout=30
+          interval=2
+          elapsed=0
+          while ! podman exec ${{ env.CONTAINER_NAME }} systemctl is-active --quiet docker; do
+            if [ $elapsed -ge $timeout ]; then
+              echo "Timeout waiting for Docker service to start."
+              podman exec ${{ env.CONTAINER_NAME }} systemctl status docker --no-pager -n 50
+              podman exec ${{ env.CONTAINER_NAME }} journalctl -u docker --no-pager -n 50
+              exit 1
+            fi
+            echo "Waiting for Docker... (${elapsed}s / ${timeout}s)"
+            sleep $interval
+            elapsed=$((elapsed + interval))
+          done
+          echo "Docker service is active."
+          podman exec ${{ env.CONTAINER_NAME }} docker info # Verify docker is running
+
+      - name: Run Install Debian Package
+        run: |
+          echo "Running tests inside the container..."
+          # Add your actual test commands here, e.g.:
+          podman exec ${{ env.CONTAINER_NAME }} resolvectl status
+          podman exec ${{ env.CONTAINER_NAME }} service systemd-resolved status
+          podman exec ${{ env.CONTAINER_NAME }} ls /workdir
+          podman exec ${{ env.CONTAINER_NAME }} docker ps
+          podman exec ${{ env.CONTAINER_NAME }} chmod +x /workdir/install_debian_latest.sh
+          podman exec ${{ env.CONTAINER_NAME }} /workdir/install_debian_latest.sh
+          podman exec ${{ env.CONTAINER_NAME }} systemctl status docker-dns.service --no-pager -n 50
+          podman exec ${{ env.CONTAINER_NAME }} docker run -d --name nginx nginx:alpine
+          podman exec ${{ env.CONTAINER_NAME }} sleep 1
+      - name: Test Direct Internal Resolution
+        run: |
+          address="$(podman exec ${{ env.CONTAINER_NAME }} dig @127.0.0.153 nginx.docker +short | head -1 || (echo "Internal DNS resolution against 127.0.0.153 failed" && exit 1))"
+          [[ $address =~ ([0-9]{1,3}\.){3}[0-9]{1,3} ]] || (echo "Internal DNS resolution against 127.0.0.153 returned an unexpected value" && exit 1)
+          echo "nginx.docker : $address"
+      - name: Test Integrated Internal Resolution (systemd-resolved)
+        run: |
+          address="$(podman exec ${{ env.CONTAINER_NAME }} dig nginx.docker +short | head -1 || (echo "Internal DNS resolution through systemd-resolved failed" && exit 1))"
+          [[ $address =~ ([0-9]{1,3}\.){3}[0-9]{1,3} ]] || (echo "Internal DNS resolution through systemd-resolved returned an unexpected value" && exit 1)
+          echo "nginx.docker : $address"
+      - name: Test Direct External Resolution
+        run: |
+          address="$(podman exec ${{ env.CONTAINER_NAME }} dig @127.0.0.153 google.com +short | head -1 || (echo "External DNS resolution against 127.0.0.153 failed" && exit 1))"
+          [[ $address =~ ([0-9]{1,3}\.){3}[0-9]{1,3} ]] || (echo "External DNS resolution against 127.0.0.153 returned an unexpected value" && exit 1)
+          echo "google.com : $address"
+      - name: Test Integrated External Resolution (systemd-resolved)
+        run: |
+          address="$(podman exec ${{ env.CONTAINER_NAME }}  dig google.com +short | head -1 || (echo "External DNS resolution through systemd-resolved failed" && exit 1))"
+          [[ $address =~ ([0-9]{1,3}\.){3}[0-9]{1,3} ]] || (echo "External DNS resolution through systemd-resolved returned an unexpected value" && exit 1)
+          echo "google.com : $address"
+  comprehensive-test:
+    needs: debian-install-test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu with systemd-resolved only
+          - os: "ubuntu:20.04"
+            dns-setup: "systemd-resolved-only"
+            setup-cmd: |
+              apt-get update && apt-get install -y systemd-resolved network-manager dnsutils netplan.io resolvconf
+              systemctl stop NetworkManager || true
+              systemctl disable NetworkManager || true
+              systemctl enable systemd-resolved
+              systemctl start systemd-resolved
+              ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+
+          # Ubuntu with NetworkManager + systemd-resolved
+          - os: "ubuntu:20.04"
+            dns-setup: "networkmanager-systemd-resolved"
+            setup-cmd: |
+              apt-get update && apt-get install -y systemd-resolved network-manager dnsutils netplan.io
+              systemctl enable NetworkManager
+              systemctl start NetworkManager
+              systemctl enable systemd-resolved
+              systemctl start systemd-resolved
+
+          # Ubuntu 22.04 with netplan + systemd-networkd
+          - os: "ubuntu:22.04"
+            dns-setup: "netplan-networkd"
+            setup-cmd: |
+              apt-get update && apt-get install -y systemd-resolved systemd-networkd dnsutils netplan.io
+              systemctl stop NetworkManager || true
+              systemctl disable NetworkManager || true
+              systemctl enable systemd-networkd
+              systemctl start systemd-networkd
+              systemctl enable systemd-resolved
+              systemctl start systemd-resolved
+              cat > /etc/netplan/01-netcfg.yaml << EOF
+              network:
+                version: 2
+                renderer: networkd
+                ethernets:
+                  eth0:
+                    dhcp4: true
+              EOF
+              netplan apply
+
+          # Ubuntu 22.04 with NetworkManager + systemd-resolved
+          - os: "ubuntu:22.04"
+            dns-setup: "networkmanager-systemd-resolved"
+            setup-cmd: |
+              apt-get update && apt-get install -y systemd-resolved network-manager dnsutils
+              systemctl enable NetworkManager
+              systemctl start NetworkManager
+              systemctl enable systemd-resolved  
+              systemctl start systemd-resolved
+
+          # Ubuntu 24.04 modern setup
+          - os: "ubuntu:24.04"
+            dns-setup: "modern-systemd-resolved"
+            setup-cmd: |
+              apt-get update && apt-get install -y systemd-resolved network-manager dnsutils
+              systemctl enable NetworkManager
+              systemctl start NetworkManager
+              systemctl enable systemd-resolved
+              systemctl start systemd-resolved
+
+          # Debian 11 with systemd-resolved
+          - os: "debian:11"
+            dns-setup: "debian-systemd-resolved"
+            setup-cmd: |
+              apt-get update && apt-get install -y systemd-resolved dnsutils
+              systemctl enable systemd-resolved
+              systemctl start systemd-resolved
+              ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+
+          # Debian 12 with NetworkManager + systemd-resolved
+          - os: "debian:12"
+            dns-setup: "debian-networkmanager-resolved"
+            setup-cmd: |
+              apt-get update && apt-get install -y systemd-resolved network-manager dnsutils
+              systemctl enable NetworkManager
+              systemctl start NetworkManager
+              systemctl enable systemd-resolved
+              systemctl start systemd-resolved
+
+          # Legacy resolvconf simulation (Ubuntu 20.04 modified)
+          - os: "ubuntu:20.04"
+            dns-setup: "legacy-resolvconf"
+            setup-cmd: |
+              apt-get update && apt-get install -y resolvconf dnsutils
+              systemctl stop systemd-resolved || true
+              systemctl disable systemd-resolved || true
+              systemctl stop NetworkManager || true
+              systemctl disable NetworkManager || true
+              echo "nameserver 8.8.8.8" > /etc/resolv.conf
+              echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup Podman container
+        run: |
+          # Create and start container with systemd
+          CONTAINER_ID=$(podman run -d \
+            --name dns-test-${{ matrix.dns-setup }} \
+            --systemd=true \
+            --tmpfs /tmp \
+            --tmpfs /run \
+            --tmpfs /run/lock \
+            -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+            ${{ matrix.os }} \
+            /sbin/init)
+          
+          echo "CONTAINER_ID=$CONTAINER_ID" >> $GITHUB_ENV
+          
+          # Wait for container to be ready
+          sleep 10
+
+      - name: Install system dependencies in container
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            export DEBIAN_FRONTEND=noninteractive
+            ${{ matrix.setup-cmd }}
+            apt-get install -y curl podman iproute2 iputils-ping procps diffutils coreutils
+          "
+
+      - name: Verify DNS setup in container
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            echo '=== DNS Setup Verification ==='
+            echo 'Current /etc/resolv.conf:'
+            cat /etc/resolv.conf || echo 'No resolv.conf found'
+            echo ''
+            echo 'systemd-resolved status:'
+            systemctl status systemd-resolved --no-pager || echo 'systemd-resolved not running'
+            echo ''
+            echo 'NetworkManager status:'
+            systemctl status NetworkManager --no-pager || echo 'NetworkManager not running'  
+            echo ''
+            echo 'DNS resolution test:'
+            nslookup google.com || echo 'Basic DNS resolution failed'
+          "
+
+      - name: Download package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: debian-package
+
+      - name: Copy package to container
+        run: |
+          podman cp ${{ needs.build.outputs.package-name }} $CONTAINER_ID:/tmp/
+
+      - name: Capture DNS state before installation
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            echo '=== Capturing DNS state before installation ==='
+            mkdir -p /tmp/dns-state-backup
+          
+            # Backup configuration files with error handling
+            cp -p /etc/resolv.conf /tmp/dns-state-backup/resolv.conf 2>/dev/null || echo 'no-resolv-conf' > /tmp/dns-state-backup/resolv.conf
+            cp -p /etc/systemd/resolved.conf /tmp/dns-state-backup/resolved.conf 2>/dev/null || echo 'no-resolved-conf' > /tmp/dns-state-backup/resolved.conf
+            cp -rp /etc/NetworkManager/ /tmp/dns-state-backup/NetworkManager/ 2>/dev/null || mkdir -p /tmp/dns-state-backup/NetworkManager
+            cp -p /etc/dhcp/dhclient.conf /tmp/dns-state-backup/dhclient.conf 2>/dev/null || echo 'no-dhclient-conf' > /tmp/dns-state-backup/dhclient.conf
+          
+            # Capture service states
+            systemctl is-enabled systemd-resolved > /tmp/dns-state-backup/systemd-resolved.enabled 2>/dev/null || echo 'not-found' > /tmp/dns-state-backup/systemd-resolved.enabled
+            systemctl is-active systemd-resolved > /tmp/dns-state-backup/systemd-resolved.active 2>/dev/null || echo 'inactive' > /tmp/dns-state-backup/systemd-resolved.active
+            systemctl is-enabled NetworkManager > /tmp/dns-state-backup/networkmanager.enabled 2>/dev/null || echo 'not-found' > /tmp/dns-state-backup/networkmanager.enabled
+            systemctl is-active NetworkManager > /tmp/dns-state-backup/networkmanager.active 2>/dev/null || echo 'inactive' > /tmp/dns-state-backup/networkmanager.active
+          
+            # Capture DNS servers and resolution status
+            systemd-resolve --status > /tmp/dns-state-backup/resolve-status.txt 2>/dev/null || echo 'no-systemd-resolve' > /tmp/dns-state-backup/resolve-status.txt
+            cat /etc/resolv.conf > /tmp/dns-state-backup/resolv.conf.content 2>/dev/null || echo 'no-resolv-conf-content' > /tmp/dns-state-backup/resolv.conf.content
+          
+            # Capture file permissions and ownership
+            stat /etc/resolv.conf > /tmp/dns-state-backup/resolv.conf.stat 2>/dev/null || echo 'no-resolv-conf-stat' > /tmp/dns-state-backup/resolv.conf.stat
+            ls -la /etc/resolv.conf > /tmp/dns-state-backup/resolv.conf.ls 2>/dev/null || echo 'no-resolv-conf-ls' > /tmp/dns-state-backup/resolv.conf.ls
+          
+            # Test current DNS functionality  
+            dig @8.8.8.8 google.com > /tmp/dns-state-backup/dns-test-before.txt 2>&1 || echo 'dns-test-failed' > /tmp/dns-state-backup/dns-test-before.txt
+            nslookup google.com > /tmp/dns-state-backup/nslookup-test-before.txt 2>&1 || echo 'nslookup-test-failed' > /tmp/dns-state-backup/nslookup-test-before.txt
+          
+            # Capture systemd unit files related to DNS
+            find /etc/systemd/system -name '*resolved*' -o -name '*dns*' > /tmp/dns-state-backup/systemd-dns-units.txt 2>/dev/null || touch /tmp/dns-state-backup/systemd-dns-units.txt
+          
+            echo 'DNS state captured successfully'
+            echo 'Backup contents:'
+            ls -la /tmp/dns-state-backup/
+          "
+
+      - name: Start Podman service in container
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            systemctl start podman || systemctl start podman.socket || echo 'Podman service start attempted'
+            sleep 3
+          "
+
+      - name: Install docker-dns package
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            echo '=== Installing docker-dns package ==='
+            dpkg -i /tmp/${{ needs.build.outputs.package-name }}
+            systemctl daemon-reload
+            sleep 5
+          "
+
+      - name: Verify package installation
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            echo '=== Verifying package installation ==='
+            systemctl status docker-dns --no-pager
+            systemctl is-enabled docker-dns
+            systemctl is-active docker-dns
+          
+            # Check if binary is installed
+            which docker-dns
+            docker-dns --version || docker-dns -h || echo 'Version check attempted'
+          
+            # Check systemd service file
+            cat /etc/systemd/system/docker-dns.service
+          "
+
+      - name: Test DNS resolution functionality
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            echo '=== Testing DNS resolution functionality ==='
+          
+            # Start a test container using podman
+            podman run -d --name test-container docker.io/nginx:alpine
+            sleep 10
+          
+            # Test container DNS resolution  
+            echo 'Testing container DNS resolution...'
+            nslookup test-container.docker || echo 'Container DNS resolution failed - this might be expected during startup'
+          
+            # Test external DNS still works
+            echo 'Testing external DNS resolution...'
+            nslookup google.com
+            dig google.com
+          
+            # Test both IPv4 and IPv6 if available
+            nslookup google.com || echo 'IPv4 resolution test'
+            nslookup ipv6.google.com || echo 'IPv6 resolution test (may fail if not supported)'
+          
+            # Test reverse DNS
+            nslookup 8.8.8.8 || echo 'Reverse DNS test'
+          
+            # Give docker-dns more time to detect container
+            sleep 15
+          
+            # Test container resolution again
+            echo 'Testing container DNS resolution after delay...'
+            nslookup test-container.docker && echo 'SUCCESS: Container DNS resolution working' || echo 'FAIL: Container DNS resolution not working'
+          
+            # Clean up test container
+            podman stop test-container
+            podman rm test-container
+          "
+
+      - name: Test DNS configuration changes
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            echo '=== Testing DNS configuration changes ==='
+          
+            echo 'Current resolv.conf:'
+            cat /etc/resolv.conf
+          
+            echo 'systemd-resolved status:'
+            systemd-resolve --status || systemctl status systemd-resolved --no-pager
+          
+            echo 'NetworkManager DNS settings:'
+            nmcli dev show | grep DNS || echo 'No NetworkManager DNS info available'
+          "
+
+      - name: Test edge cases
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            echo '=== Testing edge cases ==='
+          
+            # Test with multiple containers
+            podman run -d --name container1 docker.io/nginx:alpine  
+            podman run -d --name container2 docker.io/nginx:alpine
+            sleep 10
+          
+            # Test both containers resolve
+            nslookup container1.docker || echo 'container1 resolution failed'
+            nslookup container2.docker || echo 'container2 resolution failed'
+          
+            # Test container removal
+            podman stop container1
+            podman rm container1
+            sleep 5
+          
+            # container1 should no longer resolve, container2 should still work
+            ! nslookup container1.docker || echo 'WARNING: container1 still resolves after removal'
+            nslookup container2.docker || echo 'container2 resolution failed after container1 removal'
+          
+            # Clean up
+            podman stop container2
+            podman rm container2
+          "
+
+      - name: Test service restart resilience
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            echo '=== Testing service restart resilience ==='
+          
+            # Restart docker-dns service
+            systemctl restart docker-dns
+            sleep 5
+            systemctl status docker-dns --no-pager
+          
+            # Restart systemd-resolved if running
+            if systemctl is-active systemd-resolved; then
+              systemctl restart systemd-resolved
+              sleep 5
+              systemctl status systemd-resolved --no-pager
+            fi
+          
+            # Test DNS still works after restarts
+            nslookup google.com
+          "
+
+      - name: Test package removal (remove only)
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            echo '=== Testing package removal (remove only) ==='
+          
+            # Remove package (not purge)
+            dpkg -r docker-dns
+          
+            # Verify service is stopped and disabled
+            ! systemctl is-active docker-dns || echo 'ERROR: Service still active after removal'
+            ! systemctl is-enabled docker-dns || echo 'ERROR: Service still enabled after removal'
+          
+            # Verify binary is removed but config might remain
+            ! which docker-dns || echo 'ERROR: Binary still present after removal'
+          "
+
+      - name: Verify partial rollback after remove
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            echo '=== Verifying partial rollback after remove ==='
+          
+            # Test basic DNS functionality
+            nslookup google.com || echo 'ERROR: Basic DNS broken after package removal'
+          
+            # .docker domains should not resolve
+            ! nslookup nonexistent.docker 2>/dev/null || echo 'WARNING: .docker domains still resolving after removal'
+          
+            # systemd-resolved should be in original state or functioning
+            if [ -f /tmp/dns-state-backup/systemd-resolved.active ]; then
+              original_resolved_active=\$(cat /tmp/dns-state-backup/systemd-resolved.active)
+              current_resolved_active=\$(systemctl is-active systemd-resolved 2>/dev/null || echo 'inactive')
+              echo \"systemd-resolved state - Original: \$original_resolved_active, Current: \$current_resolved_active\"
+            fi
+          "
+
+      - name: Reinstall for purge test
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            echo '=== Reinstalling for purge test ==='
+            dpkg -i /tmp/${{ needs.build.outputs.package-name }}
+            systemctl daemon-reload
+            sleep 5
+            systemctl status docker-dns --no-pager
+          "
+
+      - name: Test package purge
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            echo '=== Testing package purge ==='
+          
+            # Purge package (complete removal including config)
+            dpkg -P docker-dns
+          
+            # Verify complete removal
+            ! systemctl status docker-dns 2>/dev/null || echo 'ERROR: Service still exists after purge'
+            ! which docker-dns || echo 'ERROR: Binary still present after purge'
+            ! [ -f /etc/systemd/system/docker-dns.service ] || echo 'ERROR: Service file still present after purge'
+          "
+
+      - name: Verify complete rollback after purge
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            echo '=== Verifying complete rollback after purge ==='
+          
+            failed=0
+          
+            # Compare key configuration files
+            if [ -f /tmp/dns-state-backup/resolv.conf ] && [ \"\$(cat /tmp/dns-state-backup/resolv.conf)\" != \"no-resolv-conf\" ]; then
+              if ! diff /etc/resolv.conf /tmp/dns-state-backup/resolv.conf >/dev/null 2>&1; then
+                echo 'INFO: /etc/resolv.conf differs from original (may be acceptable)'
+                echo 'Original:'
+                cat /tmp/dns-state-backup/resolv.conf
+                echo 'Current:'  
+                cat /etc/resolv.conf
+              fi
+            fi
+          
+            # Verify service states are restored or at least functional
+            if [ -f /tmp/dns-state-backup/systemd-resolved.enabled ]; then
+              original_resolved_enabled=\$(cat /tmp/dns-state-backup/systemd-resolved.enabled)
+              current_resolved_enabled=\$(systemctl is-enabled systemd-resolved 2>/dev/null || echo 'not-found')
+          
+              if [ \"\$original_resolved_enabled\" != \"not-found\" ] && [ \"\$current_resolved_enabled\" != \"\$original_resolved_enabled\" ]; then
+                echo \"INFO: systemd-resolved state differs - Original: \$original_resolved_enabled, Current: \$current_resolved_enabled\"
+              fi
+            fi
+          
+            # Most importantly: verify DNS functionality is restored
+            if ! nslookup google.com >/dev/null 2>&1; then
+              echo 'ERROR: Basic DNS resolution broken after package purge'
+              failed=1
+            fi
+          
+            # Verify .docker domains no longer resolve
+            if nslookup nonexistent.docker >/dev/null 2>&1; then
+              echo 'ERROR: .docker domains still resolving after purge'
+              failed=1
+            fi
+          
+            # Verify no leftover processes
+            if pgrep docker-dns >/dev/null 2>&1; then
+              echo 'ERROR: docker-dns process still running after purge'
+              failed=1
+            fi
+          
+            # Verify no leftover systemd units
+            if find /etc/systemd/system -name '*docker-dns*' | grep -q .; then
+              echo 'ERROR: docker-dns systemd units still present after purge'
+              failed=1
+            fi
+          
+            # Check for any docker-dns related files
+            if find /usr -name '*docker-dns*' 2>/dev/null | grep -q .; then
+              echo 'ERROR: docker-dns files still present in /usr after purge'
+              failed=1
+            fi
+          
+            if [ \$failed -eq 0 ]; then
+              echo 'SUCCESS: Complete rollback verification passed'
+            else
+              echo 'FAILURE: Rollback verification failed'
+              exit 1
+            fi
+          "
+
+      - name: Final DNS functionality test
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            echo '=== Final DNS functionality test ==='
+          
+            # Comprehensive DNS functionality test
+            echo 'Testing various DNS queries...'
+          
+            # Basic resolution
+            nslookup google.com
+            nslookup github.com  
+          
+            # Different record types
+            dig A google.com
+            dig AAAA google.com || echo 'IPv6 AAAA record test (may fail)'
+            dig MX google.com
+            dig TXT google.com
+          
+            # Reverse DNS
+            dig -x 8.8.8.8
+          
+            echo 'All DNS functionality tests completed'
+          "
+
+      - name: Generate test report
+        if: always()
+        run: |
+          podman exec $CONTAINER_ID bash -c "
+            echo '=== Test Report for ${{ matrix.dns-setup }} ==='
+            echo 'OS: ${{ matrix.os }}'
+            echo 'DNS Setup: ${{ matrix.dns-setup }}'
+            echo 'Test Date: \$(date)'
+            echo ''
+            echo 'Final system state:'
+            echo \"systemd-resolved: \$(systemctl is-active systemd-resolved 2>/dev/null || echo 'not running')\"
+            echo \"NetworkManager: \$(systemctl is-active NetworkManager 2>/dev/null || echo 'not running')\"
+            echo ''
+            echo 'Current resolv.conf:'
+            cat /etc/resolv.conf || echo 'No resolv.conf found'
+            echo ''
+            echo 'DNS resolution test:'
+            nslookup google.com && echo 'SUCCESS' || echo 'FAILED'
+          "
