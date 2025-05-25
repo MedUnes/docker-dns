@@ -167,7 +167,7 @@ jobs:
           podman exec ${{ env.CONTAINER_NAME }} service systemd-resolved status
           podman exec ${{ env.CONTAINER_NAME }} ls /workdir
           podman exec ${{ env.CONTAINER_NAME }} docker ps
-          podman exec ${{ env.CONTAINER_NAME }} cd ./build/dpkg
+          podman exec ${{ env.CONTAINER_NAME }} cd /workdir/build/dpkg
           podman exec ${{ env.CONTAINER_NAME }} export NUMERIC_VERSION=$(echo "${{ github.ref_name }}" | sed  "s/v//g")
           podman exec ${{ env.CONTAINER_NAME }} echo "NUMERIC_VERSION=${NUMERIC_VERSION}" >> $GITHUB_ENV
           podman exec ${{ env.CONTAINER_NAME }} ./build.sh  ${{ github.repository_owner }} ${{ github.event.repository.name }} "${{ github.ref_name }}"
