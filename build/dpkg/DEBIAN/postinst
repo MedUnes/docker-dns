@@ -68,8 +68,9 @@ dns=systemd-resolved
 ipv4.ignore-auto-dns=true
 ipv6.ignore-auto-dns=true
 EOF
+    systemctl restart NetworkManager
     fi
-    systemctl restart systemd-resolved NetworkManager
+    systemctl restart systemd-resolved
     systemctl daemon-reload
 
     echo "docker‑dns: systemd-resolved integration completed"
