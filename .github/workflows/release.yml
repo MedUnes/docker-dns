@@ -1,5 +1,8 @@
 name: Release
-
+env:
+  # --- USE A SYSTEMD-READY IMAGE ---
+  # Switched to an image known to work well with systemd in containers
+  TEST_OS_IMAGE: "jrei/systemd-ubuntu:22.04"
 on:
   workflow_run:
     workflows: [ "Tests" ]
