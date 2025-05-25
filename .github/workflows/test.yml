@@ -170,7 +170,7 @@ jobs:
           podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" export NUMERIC_VERSION=$(echo "${{ github.ref_name }}" | sed  "s/v//g")
           podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" echo "NUMERIC_VERSION=${NUMERIC_VERSION}" >> $GITHUB_ENV
           podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "cd /workdir/build/dpkg && ./build.sh  ${{ github.repository_owner }} ${{ github.event.repository.name }} ${{ github.ref_name }}"
-          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "DEB_FILE=$(ls /workdir/build/*.deb | tail -1) dpkg -i $DEB_FILE "
+          #podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "DEB_FILE=$(ls /workdir/build/*.deb | tail -1) dpkg -i $DEB_FILE "
           podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "ls -al /workdir/ /workdir/build /workdir/build/dpkg"
           # podman exec ${{ env.CONTAINER_NAME }} chmod +x /workdir/install_debian_latest.sh
           # podman exec ${{ env.CONTAINER_NAME }} /workdir/install_debian_latest.sh
