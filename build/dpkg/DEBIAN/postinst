@@ -29,6 +29,7 @@ systemctl enable --now "$SERVICE.service"
 
 if systemctl is-active --quiet systemd-resolved; then
     echo "docker‑dns installer detected systemd-resolved active - proceeding with integration"
+    systemctl stop systemd-resolved
     if [ ! -d /etc/systemd/resolved.conf.d ]; then
         echo "Creating /etc/systemd/resolved.conf.d folder.."
         mkdir -p /etc/systemd/resolved.conf.d
@@ -37,8 +38,7 @@ if systemctl is-active --quiet systemd-resolved; then
     fi
     timestamp=$(date +%s)
 
-    [ -f "$RESOLVED_DROPIN" ] &&
-        cp -a "$RESOLVED_DROPIN" "$BACKUP_DIR/resolved.conf.$timestamp"
+    [ -f "$RESOLVED_DROPIN" ] && cp -a "$RESOLVED_DROPIN" "$BACKUP_DIR/resolved.conf.$timestamp"
     cat >"$RESOLVED_DROPIN" <<EOF
 [Resolve]
 DNS=$IP
@@ -46,6 +46,11 @@ Domains=~$TLD ~.
 DNSSEC=no
 FallbackDNS=${DEFAULT_RESOLVER//,/ }
 EOF
+    target=/run/systemd/resolve/stub-resolv.conf
+    if [ "$(readlink $RESOLV_CONF_FILE)" != "$target" ]; then
+        mv "$RESOLV_CONF_FILE" "$BACKUP_DIR/resolv.conf.$timestamp"
+        ln -sf "$target" "$RESOLV_CONF_FILE"
+    fi
     if systemctl is-active --quiet NetworkManagerr; then
         echo "docker‑dns installer detected NetworkManagerr active - proceeding with integration"
         if [ ! -d /etc/NetworkManager/conf.d/ ]; then
@@ -61,13 +66,8 @@ dns=systemd-resolved
 ipv4.ignore-auto-dns=true
 ipv6.ignore-auto-dns=true
 EOF
-        systemctl restart systemd-resolved NetworkManager
     fi
-    target=/run/systemd/resolve/stub-resolv.conf
-    if [ "$(readlink $RESOLV_CONF_FILE)" != "$target" ]; then
-        mv "$RESOLV_CONF_FILE" "$BACKUP_DIR/resolv.conf.$timestamp"
-        ln -sf "$target" "$RESOLV_CONF_FILE"
-    fi
+    systemctl restart systemd-resolved NetworkManager
     systemctl daemon-reload
 
     echo "docker‑dns: systemd-resolved integration completed"
