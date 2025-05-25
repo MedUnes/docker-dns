@@ -48,9 +48,10 @@ FallbackDNS=${DEFAULT_RESOLVER//,/ }
 EOF
     target=/run/systemd/resolve/stub-resolv.conf
     if [ "$(readlink $RESOLV_CONF_FILE)" != "$target" ]; then
+        lsattr $RESOLV_CONF_FILE | grep -q 'i' && echo "Immutable flag set"
         cp "$RESOLV_CONF_FILE" "$BACKUP_DIR/resolv.conf.$timestamp"
-        rm "$RESOLV_CONF_FILE"
-        ln -sf "$target" "$RESOLV_CONF_FILE"
+        truncate -s 0 "$RESOLV_CONF_FILE"
+        cat "$target"  >> "$RESOLV_CONF_FILE"
     fi
     if systemctl is-active --quiet NetworkManagerr; then
         echo "docker‑dns installer detected NetworkManagerr active - proceeding with integration"
