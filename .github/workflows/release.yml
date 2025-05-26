@@ -166,8 +166,8 @@ jobs:
           podman exec ${{ env.CONTAINER_NAME }} docker ps
           podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" export NUMERIC_VERSION=$(echo "${{ github.ref_name }}" | sed "s/v//g")
           podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" echo "NUMERIC_VERSION=${NUMERIC_VERSION}" >> $GITHUB_ENV
-          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "cd /workdir/build/dpkg && ./build.sh ${{ github.repository_owner }} ${{ github.event.repository.name }} ${{ github.ref_name }}"
-          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "dpkg -i /workdir/build/*.deb"
+          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "cd /workdir/build/dpkg && ./build.sh ${{ github.repository_owner }} ${{ github.event.repository.name }} ${{ github.ref_name }} && dpkg -i "
+          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "dpkg -i /workdir/build/dpkg/*.deb"
           podman exec ${{ env.CONTAINER_NAME }} systemctl status ${{ env.DEBIAN_PACKAGE_NAME }}.service --no-pager -n 50
           podman exec ${{ env.CONTAINER_NAME }} docker run -d --name nginx nginx:alpine
           podman exec ${{ env.CONTAINER_NAME }} sleep 1
