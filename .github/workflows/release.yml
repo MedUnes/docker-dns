@@ -46,7 +46,18 @@ jobs:
     strategy:
       matrix:
         os_image:
+          - "jrei/systemd-ubuntu:24.04"
           - "jrei/systemd-ubuntu:22.04"
+          - "jrei/systemd-ubuntu:20.04"
+          - "jrei/systemd-ubuntu:18.04"
+          - "jrei/systemd-ubuntu:16.04"
+          - "jrei/systemd-ubuntu:13"
+          - "jrei/systemd-ubuntu:12"
+          - "jrei/systemd-ubuntu:11"
+          - "jrei/systemd-ubuntu:10"
+          - "jrei/systemd-ubuntu:8"
+          - "jrei/systemd-ubuntu:9"
+
     container:
       image: quay.io/podman/stable
       options: --privileged
