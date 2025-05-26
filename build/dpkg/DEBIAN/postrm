@@ -19,6 +19,7 @@ restore_last() {
 
 case "$1" in
 remove|purge)
+    echo "disabling  $SERVICE.service.."
     systemctl disable --now "$SERVICE.service" || true
     systemctl daemon-reload || true
     setcap -r "$BIN" 2>/dev/null || true
