@@ -221,6 +221,7 @@ jobs:
       - name: Verify systemd Service Removal
         run: |
           # Check if service file was removed
+          podman exec ${{ env.CONTAINER_NAME }} systemctl status ${{ env.CONTAINER_NAME }}.service || true
           if podman exec ${{ env.CONTAINER_NAME }} systemctl list-unit-files | grep ${{ env.DEBIAN_PACKAGE_NAME }}.service; then
             echo "Service file still exists!"
             exit 1

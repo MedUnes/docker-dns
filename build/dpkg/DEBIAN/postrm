@@ -26,8 +26,9 @@ remove|purge)
             echo "Stopping $SERVICE.service..."
             systemctl stop "$SERVICE.service" || true
         fi
-        echo "Disabling $SERVICE.service..."
-        systemctl disable --now "$SERVICE.service" || true
+        echo "Ensuring service is not still running..."
+        systemctl reset-failed "$SERVICE.service" || true
+        systemctl kill "$SERVICE.service" || true
     fi
     echo "Resetting capabilities..."
     setcap -r "$BIN" 2>/dev/null || true

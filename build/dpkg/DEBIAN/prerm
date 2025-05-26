@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+
+SERVICE=docker-dns
+
+# Stop the service while the .service file still exists
+if systemctl is-active --quiet "$SERVICE.service"; then
+    echo "Stopping $SERVICE.service in prerm..."
+    systemctl stop "$SERVICE.service" || true
+fi
+
+exit 0
