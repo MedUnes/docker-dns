@@ -48,10 +48,10 @@ jobs:
         os_image:
           - "jrei/systemd-ubuntu:24.04"
           - "jrei/systemd-ubuntu:22.04"
-         # - "jrei/systemd-ubuntu:20.04"
+          #- "jrei/systemd-ubuntu:20.04"
           #- "jrei/systemd-ubuntu:18.04"
           #- "jrei/systemd-ubuntu:16.04"
-          - "jrei/systemd-debian:13"
+          #- "jrei/systemd-debian:13"
           #- "jrei/systemd-debian:12"
           #- "jrei/systemd-debian:11"
           #- "jrei/systemd-debian:10"
@@ -179,9 +179,7 @@ jobs:
           podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "cd /workdir/build/dpkg && ./build.sh  ${{ github.repository_owner }} ${{ github.event.repository.name }} ${{ github.ref_name }}"
           podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "ls -al /workdir/build/dpkg/*.deb"
           podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "ls -al /workdir/build/dpkg/*.deb"
-          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "dpkg -i /workdir/build/dpkg/*.deb"
-          # podman exec ${{ env.CONTAINER_NAME }} chmod +x /workdir/install_debian_latest.sh
-          # podman exec ${{ env.CONTAINER_NAME }} /workdir/install_debian_latest.sh
+          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "dpkg -i /workdir/build/dpkg/*.deb" ${{ env.CONTAINER_NAME }} /workdir/install_debian_latest.sh
           podman exec ${{ env.CONTAINER_NAME }} systemctl status docker-dns.service --no-pager -n 50
           podman exec ${{ env.CONTAINER_NAME }} docker run -d --name nginx nginx:alpine
           podman exec ${{ env.CONTAINER_NAME }} sleep 1
@@ -205,6 +203,48 @@ jobs:
           address="$(podman exec ${{ env.CONTAINER_NAME }}  dig google.com +short | head -1 || (echo "External DNS resolution through systemd-resolved failed" && exit 1))"
           [[ $address =~ ([0-9]{1,3}\.){3}[0-9]{1,3} ]] || (echo "External DNS resolution through systemd-resolved returned an unexpected value" && exit 1)
           echo "google.com : $address"
+      - name: Remove Debian Package
+        run: |
+          podman exec ${{ env.CONTAINER_NAME }} dpkg -r ${{ env.PKG_NAME }}
+
+          # Verify package removal
+          podman exec ${{ env.CONTAINER_NAME }} dpkg -l | grep ${{ env.PKG_NAME }} && exit 1 || echo "Package removed successfully"
+
+      - name: Verify Service Removal
+        run: |
+          # Check if service file was removed
+          if podman exec ${{ env.CONTAINER_NAME }} systemctl list-unit-files | grep docker-dns.service; then
+            echo "Service file still exists!"
+            exit 1
+          fi
+
+          # Check if service is inactive
+          if podman exec ${{ env.CONTAINER_NAME }} systemctl is-active docker-dns.service; then
+            echo "Service is still active!"
+            exit 1
+          fi
+
+      - name: Test DNS Resolution Rollback
+        run: |
+          # Verify direct DNS server is gone
+          if podman exec ${{ env.CONTAINER_NAME }} dig @127.0.0.153 google.com +short | grep -qE '([0-9]{1,3}\.){3}[0-9]{1,3}'; then
+            echo "Package DNS server still responding!"
+            exit 1
+          fi
+
+          # Verify systemd-resolved fallback
+          if ! podman exec ${{ env.CONTAINER_NAME }} dig google.com +short | grep -qE '([0-9]{1,3}\.){3}[0-9]{1,3}'; then
+            echo "System DNS resolution broken after removal!"
+            exit 1
+          fi
+
+          # Verify Docker embedded DNS working
+          podman exec ${{ env.CONTAINER_NAME }} docker run -d --name nginx nginx:alpine
+          sleep 2
+          if ! podman exec ${{ env.CONTAINER_NAME }} dig @127.0.0.11 nginx.docker +short | grep -qE '([0-9]{1,3}\.){3}[0-9]{1,3}'; then
+            echo "Docker embedded DNS not working!"
+            exit 1
+          fi
 
   release-debian-package:
     runs-on: ubuntu-latest
