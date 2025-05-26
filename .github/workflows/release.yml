@@ -197,7 +197,7 @@ jobs:
           STATUS=$(podman exec ${{ env.CONTAINER_NAME }} dpkg-query -W -f='${db:Status-Abbrev}' ${{ env.DEBIAN_PACKAGE_NAME }} || true)
           echo "Status after -r: $STATUS"
           if [[ "$STATUS" != "rc" ]]; then
-            echo "❌ Expected status 'rc', found $STATUS
+            echo "❌ Expected status 'rc', found $STATUS"
             exit 1
           fi
           
