@@ -65,4 +65,20 @@ echo "Reloading systemd..."
 systemctl daemon-reexec || true
 systemctl daemon-reload || true
 
+# Final aggressive cleanup
+echo "Ensuring no docker-dns process survives..."
+pkill -9 -f "$SERVICE" || true
+
+# Confirm port is unbound
+if ss -lnp | grep '127.0.0.153:53'; then
+  echo "❌ Port 53 still in use! Manual cleanup failed."
+  ss -lnp | grep '127.0.0.153:53'
+  exit 1
+else
+  echo "✅ Port 53 on 127.0.0.153 is now free."
+fi
+echo "Reloading systemd..."
+systemctl daemon-reexec || true
+systemctl daemon-reload || true
+
 exit 0

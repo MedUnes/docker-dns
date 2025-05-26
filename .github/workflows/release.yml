@@ -218,6 +218,15 @@ jobs:
           
           echo "✅ Purge successful — package fully removed"
 
+      - name: ✅ Verify 127.0.0.153:53 is no longer bound
+        run: |
+          if podman exec ${{ env.CONTAINER_NAME }} ss -lnp | grep '127.0.0.153:53'; then
+            echo "❌ docker-dns is still bound to port 53!"
+            podman exec ${{ env.CONTAINER_NAME }} ss -lnp
+            exit 1
+          else
+            echo "✅ Port 53 on 127.0.0.153 is free"
+          fi
       - name: Verify systemd Service Removal
         run: |
           # Check if service file was removed
