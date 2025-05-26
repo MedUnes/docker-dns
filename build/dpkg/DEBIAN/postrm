@@ -29,7 +29,6 @@ remove|purge)
         echo "Disabling $SERVICE.service..."
         systemctl disable --now "$SERVICE.service" || true
     fi
-dis
     echo "Resetting capabilities..."
     setcap -r "$BIN" 2>/dev/null || true
 
