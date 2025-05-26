@@ -196,7 +196,10 @@ jobs:
           podman exec ${{ env.CONTAINER_NAME }} dpkg -r ${{ env.DEBIAN_PACKAGE_NAME }}
           STATUS=$(podman exec ${{ env.CONTAINER_NAME }} dpkg-query -W -f='${db:Status-Abbrev}' ${{ env.DEBIAN_PACKAGE_NAME }} || true)
           echo "Status after -r: $STATUS"
-          [[ "$STATUS" == "rc" ]] || (echo "❌ Expected status 'rc'" && exit 1)
+          if [[ "$STATUS" != "rc" ]]; then
+            echo "❌ Expected status 'rc', found $STATUS
+            exit 1
+          fi
           
           if podman exec ${{ env.CONTAINER_NAME }} which ${{ env.DEBIAN_PACKAGE_NAME }} >/dev/null 2>&1; then
             echo "❌ Binary still in PATH"
