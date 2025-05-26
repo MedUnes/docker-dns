@@ -178,10 +178,7 @@ jobs:
           podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" export NUMERIC_VERSION=$(echo "${{ github.ref_name }}" | sed  "s/v//g")
           podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" echo "NUMERIC_VERSION=${NUMERIC_VERSION}" >> $GITHUB_ENV
           podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "cd /workdir/build/dpkg && ./build.sh  ${{ github.repository_owner }} ${{ github.event.repository.name }} ${{ github.ref_name }}"
-          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "ls -al /workdir/build/dpkg/*.deb"
-          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "ls -al /workdir/build/dpkg/*.deb"
-          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "dpkg -i /workdir/build/dpkg/*.deb" ${{ env.CONTAINER_NAME }} /workdir/install_debian_latest.sh
-          podman exec ${{ env.CONTAINER_NAME }} systemctl status docker-dns.service --no-pager -n 50
+          podman exec ${{ env.CONTAINER_NAME }} systemctl status  ${{ env.DEBIAN_PACKAGE_NAME }}.service --no-pager -n 50
           podman exec ${{ env.CONTAINER_NAME }} docker run -d --name nginx nginx:alpine
           podman exec ${{ env.CONTAINER_NAME }} sleep 1
       - name: Test Direct Internal Resolution
@@ -214,13 +211,13 @@ jobs:
       - name: Verify Service Removal
         run: |
           # Check if service file was removed
-          if podman exec ${{ env.CONTAINER_NAME }} systemctl list-unit-files | grep docker-dns.service; then
+          if podman exec ${{ env.CONTAINER_NAME }} systemctl list-unit-files | grep  ${{ env.DEBIAN_PACKAGE_NAME }}.service; then
             echo "Service file still exists!"
             exit 1
           fi
 
           # Check if service is inactive
-          if podman exec ${{ env.CONTAINER_NAME }} systemctl is-active docker-dns.service; then
+          if podman exec ${{ env.CONTAINER_NAME }} systemctl is-active  ${{ env.DEBIAN_PACKAGE_NAME }}.service; then
             echo "Service is still active!"
             exit 1
           fi
