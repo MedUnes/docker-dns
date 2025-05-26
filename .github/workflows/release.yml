@@ -194,7 +194,7 @@ jobs:
       - name: 🧹 Remove Debian Package and verify state
         run: |
           podman exec ${{ env.CONTAINER_NAME }} dpkg -r ${{ env.DEBIAN_PACKAGE_NAME }}
-          STATUS=$(podman exec ${{ env.CONTAINER_NAME }} dpkg-query -W -f='${db:Status-Abbrev}' | tr -d [:blank:] ${{ env.DEBIAN_PACKAGE_NAME }} || true)
+          STATUS=$(podman exec ${{ env.CONTAINER_NAME }} dpkg-query -W -f='${db:Status-Abbrev}' ${{ env.DEBIAN_PACKAGE_NAME }} | tr -d [:blank:]  || true)
           echo $STATUS | wc -c
           echo "Status after -r: $STATUS"
           if [[ "$STATUS" != "rc" ]]; then
