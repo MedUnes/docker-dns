@@ -19,8 +19,10 @@ restore_last() {
 
 case "$1" in
 remove|purge)
-    echo "disabling  $SERVICE.service.."
-    systemctl disable --now "$SERVICE.service" || true
+    if systemctl list-unit-files | grep "$SERVICE.service" ; then
+      echo "disabling  $SERVICE.service.."
+      systemctl disable --now "$SERVICE.service" || true
+    fi
     systemctl daemon-reload || true
     setcap -r "$BIN" 2>/dev/null || true
     if dpkg -L "$SERVICE" 2>/dev/null | grep -qx "$BIN"; then
