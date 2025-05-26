@@ -22,10 +22,14 @@ restore_last() {
 case "$1" in
 remove|purge)
     if systemctl list-unit-files "$SERVICE.service" >/dev/null 2>&1; then
+        if systemctl is-active --quiet "$SERVICE.service"; then
+            echo "Stopping $SERVICE.service..."
+            systemctl stop "$SERVICE.service" || true
+        fi
         echo "Disabling $SERVICE.service..."
         systemctl disable --now "$SERVICE.service" || true
     fi
-
+dis
     echo "Resetting capabilities..."
     setcap -r "$BIN" 2>/dev/null || true
 
