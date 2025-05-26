@@ -25,6 +25,8 @@ remove|purge)
     fi
     echo "reloading daemon .."
     systemctl daemon-reload || true
+    systemctl daemon-reexec || true
+
     echo "resetting CAP.."
     setcap -r "$BIN" 2>/dev/null || true
     if dpkg -L "$SERVICE" 2>/dev/null | grep -qx "$BIN"; then
