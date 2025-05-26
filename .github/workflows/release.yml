@@ -85,21 +85,10 @@ jobs:
         run: |
           # Define image name (assuming docker.io, adjust if needed)
           FQ_IMAGE_NAME="docker.io/${{ matrix.os_image }}"
-
-          echo "Starting systemd container (${FQ_IMAGE_NAME}) named ${{ env.CONTAINER_NAME }}..."
-
-          # --- Use /sbin/init ---
-          # Images like jrei/systemd-ubuntu are typically configured
-          # to work correctly when started with /sbin/init.
-          INIT_COMMAND="/sbin/init"
-
-          podman run -d --name ${{ env.CONTAINER_NAME }} --privileged --cgroupns=host \
-            -v "$GITHUB_WORKSPACE":/workdir \
-            ${FQ_IMAGE_NAME} ${INIT_COMMAND}
+          podman run -d --name ${{ env.CONTAINER_NAME }} --privileged --cgroupns=host -v "$GITHUB_WORKSPACE":/workdir ${FQ_IMAGE_NAME} /sbin/init
 
           echo "Waiting for systemd to initialize..."
-          sleep 20 # Increased sleep duration
-
+          sleep 20
           # Check if systemd is minimally operational
           if podman exec ${{ env.CONTAINER_NAME }} systemctl list-units > /dev/null; then
              echo "Systemd seems operational. Checking system running state..."
@@ -110,7 +99,7 @@ jobs:
                # Use systemctl status to get more info if degraded
                status=$(podman exec ${{ env.CONTAINER_NAME }} systemctl is-system-running)
                echo "Warning: Systemd might be degraded but continuing... State: $status"
-               podman exec ${{ env.CONTAINER_NAME }} systemctl status --no-pager --full || true # Display status
+               podman exec ${{ env.CONTAINER_NAME }} systemctl status --no-pager --full || true 
              fi
           else
              echo "Error: Failed to execute systemctl inside the container."
@@ -175,10 +164,10 @@ jobs:
           podman exec ${{ env.CONTAINER_NAME }} service systemd-resolved status
           podman exec ${{ env.CONTAINER_NAME }} ls /workdir
           podman exec ${{ env.CONTAINER_NAME }} docker ps
-          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" export NUMERIC_VERSION=$(echo "${{ github.ref_name }}" | sed  "s/v//g")
+          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" export NUMERIC_VERSION=$(echo "${{ github.ref_name }}" | sed "s/v//g")
           podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" echo "NUMERIC_VERSION=${NUMERIC_VERSION}" >> $GITHUB_ENV
-          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "cd /workdir/build/dpkg && ./build.sh  ${{ github.repository_owner }} ${{ github.event.repository.name }} ${{ github.ref_name }}"
-          podman exec ${{ env.CONTAINER_NAME }} systemctl status  ${{ env.DEBIAN_PACKAGE_NAME }}.service --no-pager -n 50
+          podman exec ${{ env.CONTAINER_NAME }} "bash" "-c" "cd /workdir/build/dpkg && ./build.sh ${{ github.repository_owner }} ${{ github.event.repository.name }} ${{ github.ref_name }}"
+          podman exec ${{ env.CONTAINER_NAME }} systemctl status ${{ env.DEBIAN_PACKAGE_NAME }}.service --no-pager -n 50
           podman exec ${{ env.CONTAINER_NAME }} docker run -d --name nginx nginx:alpine
           podman exec ${{ env.CONTAINER_NAME }} sleep 1
       - name: Test Direct Internal Resolution
@@ -203,6 +192,9 @@ jobs:
           echo "google.com : $address"
       - name: Remove Debian Package
         run: |
+          podman exec ${{ env.CONTAINER_NAME }} dpkg -l | grep ${{ env.DEBIAN_PACKAGE_NAME }} 
+          podman exec ${{ env.CONTAINER_NAME }} systemctl is-active  ${{ env.DEBIAN_PACKAGE_NAME }}.service
+          podman exec ${{ env.CONTAINER_NAME }} systemctl list-unit-files | grep ${{ env.DEBIAN_PACKAGE_NAME }}.service
           podman exec ${{ env.CONTAINER_NAME }} dpkg -r ${{ env.DEBIAN_PACKAGE_NAME }}
 
           # Verify package removal
@@ -211,13 +203,13 @@ jobs:
       - name: Verify Service Removal
         run: |
           # Check if service file was removed
-          if podman exec ${{ env.CONTAINER_NAME }} systemctl list-unit-files | grep  ${{ env.DEBIAN_PACKAGE_NAME }}.service; then
+          if podman exec ${{ env.CONTAINER_NAME }} systemctl list-unit-files | grep ${{ env.DEBIAN_PACKAGE_NAME }}.service; then
             echo "Service file still exists!"
             exit 1
           fi
 
           # Check if service is inactive
-          if podman exec ${{ env.CONTAINER_NAME }} systemctl is-active  ${{ env.DEBIAN_PACKAGE_NAME }}.service; then
+          if podman exec ${{ env.CONTAINER_NAME }} systemctl is-active --quiet ${{ env.DEBIAN_PACKAGE_NAME }}.service; then
             echo "Service is still active!"
             exit 1
           fi
@@ -255,7 +247,7 @@ jobs:
       - name: Build Debian Package
         run: |
           cd ./build/dpkg
-          export NUMERIC_VERSION=$(echo "${{ github.ref_name }}" | sed  "s/v//g")
+          export NUMERIC_VERSION=$(echo "${{ github.ref_name }}" | sed "s/v//g")
           echo "NUMERIC_VERSION=${NUMERIC_VERSION}" >> $GITHUB_ENV
           ./build.sh  ${{ github.repository_owner }} ${{ github.event.repository.name }} "${{ github.ref_name }}"
       - name: Upload Debian package to GitHub Release
