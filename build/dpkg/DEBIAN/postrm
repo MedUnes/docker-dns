@@ -2,6 +2,7 @@
 set -e
 
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
 SERVICE=docker-dns
 BIN=/usr/bin/docker-dns
 BACKUP_DIR=/var/lib/docker-dns/backup
@@ -9,6 +10,7 @@ STATE_DIR=/var/lib/docker-dns
 
 RESOLVED_DROPIN=/etc/systemd/resolved.conf.d/docker-dns.conf
 NM_DROPIN=/etc/NetworkManager/conf.d/90-docker-dns.conf
+RESOLV_CONF_FILE=/etc/resolv.conf  # define if needed
 
 restore_last() {
     prefix="$1"
@@ -19,34 +21,33 @@ restore_last() {
 
 case "$1" in
 remove|purge)
-    if systemctl list-unit-files | grep "$SERVICE.service" ; then
-      echo "disabling  $SERVICE.service.."
-      systemctl disable --now "$SERVICE.service" || true
+    if systemctl list-unit-files "$SERVICE.service" >/dev/null 2>&1; then
+        echo "Disabling $SERVICE.service..."
+        systemctl disable --now "$SERVICE.service" || true
     fi
-    echo "reloading daemon .."
-    systemctl daemon-reload || true
-    systemctl daemon-reexec || true
 
-    echo "resetting CAP.."
+    echo "Resetting capabilities..."
     setcap -r "$BIN" 2>/dev/null || true
-    if dpkg -L "$SERVICE" 2>/dev/null | grep -qx "$BIN"; then
-        :
-    else
-        echo "removing $BIN"
+
+    # Only remove binary if not owned by package anymore
+    if ! dpkg-query -L "$SERVICE" 2>/dev/null | grep -qx "$BIN"; then
+        echo "Removing $BIN"
         rm -f "$BIN"
     fi
     ;;
 esac
 
 if [ "$1" = "purge" ]; then
-    echo "docker‑dns: rolling back systemd-resolved integration"
+    echo "Purging $SERVICE..."
 
+    echo "Rolling back systemd-resolved integration..."
     rm -f "$RESOLVED_DROPIN"
     rm -f "$NM_DROPIN"
 
+    echo "Restarting systemd-resolved and NetworkManager..."
     systemctl try-restart systemd-resolved NetworkManager || true
-    systemctl daemon-reload || true
 
+    echo "Restoring /etc/resolv.conf if needed..."
     if [ -L "$RESOLV_CONF_FILE" ]; then
         restore_last resolv.conf "$RESOLV_CONF_FILE" || true
     fi
@@ -54,5 +55,10 @@ if [ "$1" = "purge" ]; then
     rm -rf "$BACKUP_DIR"
     rmdir --ignore-fail-on-non-empty "$STATE_DIR" 2>/dev/null || true
 fi
+
+# Finally reload systemd once everything is removed
+echo "Reloading systemd..."
+systemctl daemon-reexec || true
+systemctl daemon-reload || true
 
 exit 0
