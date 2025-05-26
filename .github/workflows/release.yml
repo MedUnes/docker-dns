@@ -199,7 +199,12 @@ jobs:
           podman exec ${{ env.CONTAINER_NAME }} dpkg -r ${{ env.DEBIAN_PACKAGE_NAME }}
 
           # Verify package removal
-          podman exec ${{ env.CONTAINER_NAME }} dpkg -l | grep ${{ env.DEBIAN_PACKAGE_NAME }} && exit 1 || echo "Package removed successfully"
+          if [[ podman exec ${{ env.CONTAINER_NAME }} "dpkg -l ${{ env.DEBIAN_PACKAGE_NAME }}" ]]; then
+            echo "Found the package ${{ env.DEBIAN_PACKAGE_NAME }} even after the removal process, this should not be the case!"
+            exit 1
+          else
+            echo "Package ${{ env.DEBIAN_PACKAGE_NAME }}" removed successfully, could not find any trace of it in the system"
+          fi
 
       - name: Verify Service Removal
         run: |
