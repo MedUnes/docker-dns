@@ -9,8 +9,13 @@ if systemctl is-active --quiet "$SERVICE.service"; then
     systemctl stop "$SERVICE.service" || true
 fi
 
-# Kill lingering docker-dns binary ONLY
-echo "Force-killing lingering docker-dns binary in prerm..."
-pgrep -f "^$BIN" | xargs --no-run-if-empty kill -9 || true
+# Kill only matching docker-dns binaries (ignore prerm)
+for pid in $(pgrep -f "/usr/bin/docker-dns"); do
+  cmd=$(ps -p "$pid" -o args=)
+  if echo "$cmd" | grep -q "^/usr/bin/docker-dns"; then
+    echo "Killing docker-dns process (PID: $pid)"
+    kill -9 "$pid" || true
+  fi
+done
 
 exit 0
