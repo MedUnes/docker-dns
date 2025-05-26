@@ -49,14 +49,14 @@ jobs:
           - "jrei/systemd-ubuntu:24.04"
           - "jrei/systemd-ubuntu:22.04"
           - "jrei/systemd-ubuntu:20.04"
-          - "jrei/systemd-ubuntu:18.04"
+          #- "jrei/systemd-ubuntu:18.04"
           #- "jrei/systemd-ubuntu:16.04"
           - "jrei/systemd-debian:13"
           - "jrei/systemd-debian:12"
-          - "jrei/systemd-debian:11"
-          - "jrei/systemd-debian:10"
-          - "jrei/systemd-debian:8"
-          - "jrei/systemd-debian:9"
+          #- "jrei/systemd-debian:11"
+          #- "jrei/systemd-debian:10"
+          #- "jrei/systemd-debian:8"
+          #- "jrei/systemd-debian:9"
 
     container:
       image: quay.io/podman/stable
