@@ -4,7 +4,7 @@ env:
   # Switched to an image known to work well with systemd in containers
   TEST_OS_IMAGE: "jrei/systemd-ubuntu:22.04"
   CONTAINER_NAME: "systemd-test-env"
-  DEBIAN_PACKAGE_NAME=docker-dns
+  DEBIAN_PACKAGE_NAME: docker-dns
 
 on:
   workflow_run:
