@@ -4,18 +4,28 @@ set -e
 SERVICE=docker-dns
 BIN=/usr/bin/docker-dns
 
+echo "📦 prerm: Preparing to remove $SERVICE"
+
+# Stop the systemd service if running
 if systemctl is-active --quiet "$SERVICE.service"; then
-    echo "Stopping $SERVICE.service in prerm..."
+    echo "🔧 Stopping $SERVICE.service..."
     systemctl stop "$SERVICE.service" || true
 fi
 
-# Kill only matching docker-dns binaries (ignore prerm)
-for pid in $(pgrep -f "/usr/bin/docker-dns"); do
-  cmd=$(ps -p "$pid" -o args=)
-  if echo "$cmd" | grep -q "^/usr/bin/docker-dns"; then
-    echo "Killing docker-dns process (PID: $pid)"
-    kill -9 "$pid" || true
-  fi
+# Carefully kill only the actual docker-dns binary process
+echo "🧹 Ensuring no lingering docker-dns process is running..."
+for pid in $(pgrep -f "$BIN"); do
+    # Get full command line
+    cmd=$(ps -p "$pid" -o args=)
+
+    # Only kill if the command exactly matches the binary path
+    if [[ "$cmd" == "$BIN"* && "$pid" -ne "$$" ]]; then
+        echo "⚠️  Killing PID $pid (cmd: $cmd)"
+        kill -9 "$pid" || true
+    else
+        echo "✅ Skipping PID $pid (cmd: $cmd)"
+    fi
 done
 
+echo "✅ prerm complete"
 exit 0
