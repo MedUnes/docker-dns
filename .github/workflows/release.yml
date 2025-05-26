@@ -193,7 +193,8 @@ jobs:
           echo "google.com : $address"
       - name: 🧹 Remove Debian Package and verify state
         run: |
-          podman exec ${{ env.CONTAINER_NAME }} dpkg -r ${{ env.DEBIAN_PACKAGE_NAME }}
+          podman exec $CONTAINER dpkg -r ${{ env.DEBIAN_PACKAGE_NAME }} || if [ $? -eq 137 ]; then echo "dpkg got SIGKILL but cleanup succeeded"; else exit 1; fi
+  
           STATUS=$(podman exec ${{ env.CONTAINER_NAME }} dpkg-query -W -f='${db:Status-Abbrev}' ${{ env.DEBIAN_PACKAGE_NAME }} | tr -d [:blank:]  || true)
           if [[ "$STATUS" != "rc" ]]; then
             echo "❌ Expected status 'rc', found $STATUS"
