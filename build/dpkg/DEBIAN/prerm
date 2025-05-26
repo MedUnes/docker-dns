@@ -2,16 +2,15 @@
 set -e
 
 SERVICE=docker-dns
+BIN=/usr/bin/docker-dns
 
 if systemctl is-active --quiet "$SERVICE.service"; then
     echo "Stopping $SERVICE.service in prerm..."
     systemctl stop "$SERVICE.service" || true
 fi
 
-# Extra: check and kill lingering process early
-if pgrep -f "$SERVICE" >/dev/null; then
-    echo "Force-killing lingering docker-dns processes in prerm..."
-    pkill -f "$SERVICE" || true
-fi
+# Kill lingering docker-dns binary ONLY
+echo "Force-killing lingering docker-dns binary in prerm..."
+pgrep -f "^$BIN" | xargs --no-run-if-empty kill -9 || true
 
 exit 0
