@@ -246,6 +246,8 @@ jobs:
       - name: Test DNS Resolution Rollback
         run: |
           # Verify direct DNS server is gone
+          podman exec ${{ env.CONTAINER_NAME }} systemctl is-active  ${{ env.DEBIAN_PACKAGE_NAME }}.service
+          podman exec ${{ env.CONTAINER_NAME }} systemctl status  ${{ env.DEBIAN_PACKAGE_NAME }}.service
           if podman exec ${{ env.CONTAINER_NAME }} dig @127.0.0.153 google.com +short | grep -qE '([0-9]{1,3}\.){3}[0-9]{1,3}'; then
             echo "Package DNS server still responding!"
             exit 1
