@@ -67,7 +67,10 @@ systemctl daemon-reload || true
 
 # Final aggressive cleanup
 echo "Ensuring no docker-dns process survives..."
-pkill -9 -f "$SERVICE" || true
+if pgrep -f "^/usr/bin/docker-dns" >/dev/null; then
+  echo "⚠️  docker-dns process still found after prerm!"
+  # Don’t kill – just warn and let dpkg finish
+fi
 
 # Confirm port is unbound
 if ss -lnp | grep '127.0.0.153:53'; then
