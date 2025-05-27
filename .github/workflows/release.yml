@@ -220,9 +220,9 @@ jobs:
 
       - name: ✅ Verify 127.0.0.153:53 is no longer bound
         run: |
-          if podman exec ${{ env.CONTAINER_NAME }} ss -lnp | grep '127.0.0.153:53'; then
+          if podman exec ${{ env.CONTAINER_NAME }} "bash" "-c"  ss -lnp | grep '127.0.0.153:53'; then
             echo "❌ docker-dns is still bound to port 53!"
-            podman exec ${{ env.CONTAINER_NAME }} ss -lnp
+            podman exec ${{ env.CONTAINER_NAME }} "bash" "-c"  ss -lnp
             exit 1
           else
             echo "✅ Port 53 on 127.0.0.153 is free"
