@@ -123,6 +123,7 @@ jobs:
               wget \
               bash \
               jq \
+              iproute2 \
               net-tools \
               dnsutils \
               git \
