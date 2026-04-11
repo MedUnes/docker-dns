@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>docker-dns — Docker Container DNS Resolver</title>
+    <meta name="description" content="A lightweight DNS server that resolves Docker container names to their IP addresses from the host machine.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #06090c;
+            --bg-card: #0d1117;
+            --bg-code: #161b22;
+            --green: #00e676;
+            --green-dim: #00a152;
+            --green-glow: rgba(0, 230, 118, 0.15);
+            --blue: #58a6ff;
+            --text: #c9d1d9;
+            --text-dim: #8b949e;
+            --border: #21262d;
+            --border-green: #1a3a2a;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.75;
+            -webkit-font-smoothing: antialiased;
+        }
+        h1, h2, h3, h4 {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--green);
+            font-weight: 700;
+        }
+        a { color: var(--blue); text-decoration: none; transition: color 0.2s; }
+        a:hover { color: #fff; }
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.88em;
+        }
+        code:not(pre code) {
+            background: var(--bg-code);
+            padding: 0.15em 0.4em;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            color: var(--blue);
+        }
+        pre {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem 1.5rem;
+            overflow-x: auto;
+            margin: 1rem 0 1.5rem;
+            color: #e6edf3;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .container { max-width: 960px; margin: 0 auto; padding: 0 1.25rem; }
+        header {
+            text-align: center;
+            padding: 5rem 0 3.5rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 3.5rem;
+        }
+        header .logo {
+            max-width: 150px;
+            filter: drop-shadow(0 0 20px var(--green-glow));
+            margin-bottom: 1.5rem;
+        }
+        header h1 {
+            font-size: clamp(2rem, 5vw, 2.8rem);
+            margin-bottom: 0.75rem;
+            text-shadow: 0 0 30px var(--green-glow);
+        }
+        header .tagline {
+            font-size: 1.1rem;
+            color: var(--text-dim);
+            max-width: 640px;
+            margin: 0 auto 1.75rem;
+        }
+        .badges {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+        .badges img { height: 22px; }
+        .terminal {
+            background: #0d0d0d;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 1.5rem 0;
+            text-align: left;
+        }
+        .terminal-bar {
+            background: #161b22;
+            padding: 0.5rem 1rem;
+            display: flex;
+            gap: 6px;
+        }
+        .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .terminal-dot:nth-child(1) { background: #f85149; }
+        .terminal-dot:nth-child(2) { background: #e3b341; }
+        .terminal-dot:nth-child(3) { background: #3fb950; }
+        .terminal-body {
+            padding: 1.25rem 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.8;
+            color: #c9d1d9;
+        }
+        .terminal-body .prompt { color: var(--green); }
+        .terminal-body .comment { color: var(--text-dim); }
+        .terminal-body .output { color: #58a6ff; }
+        section { margin-bottom: 3.5rem; }
+        section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px dashed var(--border-green);
+        }
+        section h3 {
+            font-size: 1.1rem;
+            margin: 2rem 0 0.75rem;
+            color: var(--green-dim);
+        }
+        section p { margin-bottom: 1rem; }
+        section ul { padding-left: 1.5rem; margin-bottom: 1rem; }
+        section li { margin-bottom: 0.6rem; }
+        .table-wrap { overflow-x: auto; margin: 1rem 0 1.5rem; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+        th, td {
+            border: 1px solid var(--border);
+            padding: 0.65rem 0.9rem;
+            text-align: left;
+        }
+        th {
+            background: #0d1f1a;
+            color: var(--green);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+        td { background: var(--bg-card); }
+        nav {
+            margin-bottom: 3.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 1.25rem;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+        }
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 2rem 0;
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <header>
+        <img src="logo.png" alt="docker-dns logo" class="logo">
+        <h1>docker-dns</h1>
+        <p class="tagline">A lightweight DNS server that resolves Docker container names to their IP addresses, enabling seamless networking between containers and the host.</p>
+        <div class="badges">
+            <a href="https://github.com/MedUnes/docker-dns/actions/workflows/test.yml"><img src="https://github.com/MedUnes/docker-dns/actions/workflows/test.yml/badge.svg" alt="Tests"></a>
+            <a href="https://github.com/MedUnes/docker-dns/actions/workflows/release.yml"><img src="https://github.com/MedUnes/docker-dns/actions/workflows/release.yml/badge.svg" alt="Release"></a>
+            <a href="https://goreportcard.com/report/github.com/medunes/docker-dns"><img src="https://goreportcard.com/badge/github.com/medunes/docker-dns" alt="Go Report Card"></a>
+            <a href="https://github.com/medunes/docker-dns/blob/master/LICENSE"><img src="https://img.shields.io/github/license/medunes/docker-dns" alt="License"></a>
+            <a href="https://pkg.go.dev/github.com/medunes/docker-dns"><img src="https://pkg.go.dev/badge/github.com/medunes/docker-dns.svg" alt="Go Reference"></a>
+        </div>
+        <div class="terminal">
+            <div class="terminal-bar">
+                <span class="terminal-dot"></span>
+                <span class="terminal-dot"></span>
+                <span class="terminal-dot"></span>
+            </div>
+            <div class="terminal-body">
+                <span class="prompt">$</span> docker run -d --name myapi nginx:alpine<br>
+                <span class="prompt">$</span> dig myapi.docker @127.0.0.153 +short<br>
+                <span class="output">172.17.0.2</span><br>
+                <span class="prompt">$</span> curl http://myapi.docker<br>
+                <span class="output">&lt;html&gt;Welcome to nginx!&lt;/html&gt;</span>
+            </div>
+        </div>
+    </header>
+
+    <nav>
+        <a href="#features">Features</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#installation">Installation</a>
+        <a href="#configuration">Configuration</a>
+        <a href="#usage">Usage</a>
+        <a href="#systemd">Systemd &amp; DNS</a>
+        <a href="#build">Build from Source</a>
+        <a href="#contributing">Contributing</a>
+        <a href="https://github.com/MedUnes/docker-dns">GitHub</a>
+    </nav>
+
+    <main>
+
+        <section id="features">
+            <h2>Features</h2>
+            <ul>
+                <li><strong>Automatic DNS Resolution</strong> — resolve Docker container names with a custom TLD (default <code>.docker</code>) to their IP addresses. Supports multiple TLDs and containers on any Docker network.</li>
+                <li><strong>Fallback DNS</strong> — forwards non-Docker queries in parallel to configurable upstream resolvers (default: <code>8.8.8.8</code>, <code>1.1.1.1</code>, <code>8.8.4.4</code>), returning the first successful response.</li>
+                <li><strong>Caching</strong> — TTL-based DNS cache with background eviction, size limits, and hit/miss telemetry.</li>
+                <li><strong>Singleflight</strong> — concurrent cache misses for the same name are collapsed into a single Docker API call (thundering-herd protection).</li>
+                <li><strong>Rate Limiting</strong> — per-IP token-bucket rate limiter with automatic idle cleanup.</li>
+                <li><strong>Health &amp; Metrics</strong> — HTTP server on <code>:8080</code> exposes <code>/health</code> and <code>/metrics</code> (cache stats, query counts, error rates).</li>
+                <li><strong>UDP + TCP</strong> — full DNS protocol support with EDNS0 handling and proper truncation.</li>
+                <li><strong>Debian Package</strong> — <code>.deb</code> package with automatic systemd integration and clean uninstall.</li>
+                <li><strong>Tested on 6 Distros</strong> — full install → resolve → uninstall lifecycle CI on Ubuntu 20.04/22.04/24.04 and Debian 11/12/13.</li>
+                <li><strong>Lightweight</strong> — single Go binary, minimal resource footprint.</li>
+            </ul>
+        </section>
+
+        <section id="architecture">
+            <h2>Architecture</h2>
+            <p>The diagram below shows how a DNS query flows through the system, from the network listeners down to Docker or upstream resolvers.</p>
+            <img src="architecture.png" alt="docker-dns architecture" style="max-width:100%; border-radius:8px; border:1px solid var(--border); margin:1rem 0;">
+            <p>Queries for managed TLDs (like <code>.docker</code> or <code>.local</code>) are resolved by inspecting the matching Docker container. A singleflight gate prevents concurrent cache misses from hammering the Docker API. All other queries are forwarded in parallel to the configured upstream resolvers, returning the first successful response.</p>
+        </section>
+
+        <section id="installation">
+            <h2>Installation (Linux/Debian)</h2>
+            <p><strong>Important:</strong> Read the <a href="https://github.com/MedUnes/docker-dns/blob/master/docs/Systemd.md">Systemd &amp; DNS documentation</a> for a deep overview on how systemd integrates with DNS resolution across distros.</p>
+
+            <h3>Download and Install</h3>
+            <p>Go to the <a href="https://github.com/MedUnes/docker-dns/releases">Releases</a> page, download the <code>.deb</code> for your version, and install:</p>
+            <pre><code>wget https://github.com/MedUnes/docker-dns/releases/download/v1.0.0/docker-dns-1.0.0_amd64.deb
+sudo dpkg -i docker-dns-1.0.0_amd64.deb</code></pre>
+
+            <p>The installer automatically detects your DNS resolver and integrates accordingly:</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>System</th><th>Integration</th></tr></thead>
+                    <tbody>
+                    <tr><td>Ubuntu (systemd-resolved)</td><td>Drop-in config at <code>/etc/systemd/resolved.conf.d/docker-dns.conf</code> with routing domains (<code>~docker</code>)</td></tr>
+                    <tr><td>Debian (plain resolv.conf)</td><td>Prepends <code>nameserver 127.0.0.153</code> to <code>/etc/resolv.conf</code></td></tr>
+                    <tr><td>dnsmasq</td><td><code>server=/docker/127.0.0.153</code> in <code>/etc/dnsmasq.d/docker-dns.conf</code></td></tr>
+                    <tr><td>unbound</td><td>stub-zone in <code>/etc/unbound/unbound.conf.d/docker-dns.conf</code></td></tr>
+                    <tr><td>NetworkManager (dnsmasq)</td><td><code>server=/docker/127.0.0.153</code> in <code>/etc/NetworkManager/dnsmasq.d/docker-dns.conf</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Verify</h3>
+            <pre><code>systemctl status docker-dns</code></pre>
+
+            <h3>Uninstall</h3>
+            <p>All integration changes are reversed automatically on removal:</p>
+            <pre><code>sudo dpkg -r docker-dns</code></pre>
+        </section>
+
+        <section id="configuration">
+            <h2>Configuration</h2>
+            <p>The systemd service reads from <code>/etc/docker-dns/docker-dns.conf</code> (INI format). All settings are also available as CLI flags.</p>
+
+            <pre><code># /etc/docker-dns/docker-dns.conf
+IP=127.0.0.153
+TTL=300
+TLD=docker,local
+DEFAULT_RESOLVER=8.8.8.8,1.1.1.1,8.8.4.4</code></pre>
+
+            <h3>Full Reference</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>CLI Flag</th><th>INI Variable</th><th>Default</th><th>Description</th></tr></thead>
+                    <tbody>
+                    <tr><td><code>--ip</code></td><td><code>IP</code></td><td><code>127.0.0.153</code></td><td>IP address the DNS server listens on</td></tr>
+                    <tr><td><code>--tld</code></td><td><code>TLD</code></td><td><code>docker</code></td><td>Comma-separated managed TLDs for container resolution</td></tr>
+                    <tr><td><code>--ttl</code></td><td><code>TTL</code></td><td><code>300</code></td><td>TTL in seconds for cache entries and DNS responses</td></tr>
+                    <tr><td><code>--resolvers</code></td><td><code>DEFAULT_RESOLVER</code></td><td><code>8.8.8.8,1.1.1.1,8.8.4.4</code></td><td>Comma-separated fallback DNS resolver IPs</td></tr>
+                    <tr><td><code>--forward-timeout</code></td><td>—</td><td><code>2s</code></td><td>Per-resolver timeout for forwarded DNS queries</td></tr>
+                    <tr><td><code>--rate-limit</code></td><td>—</td><td><code>100</code></td><td>Max queries/sec per client IP (0 disables)</td></tr>
+                    <tr><td><code>--rate-burst</code></td><td>—</td><td><code>50</code></td><td>Burst allowance for rate limiting</td></tr>
+                    <tr><td><code>--max-cache-size</code></td><td>—</td><td><code>10000</code></td><td>Max DNS cache entries (0 = unlimited)</td></tr>
+                    <tr><td><code>--http-addr</code></td><td>—</td><td><code>:8080</code></td><td>Health/metrics HTTP server address (empty to disable)</td></tr>
+                    <tr><td><code>--docker-timeout</code></td><td>—</td><td><code>5s</code></td><td>Timeout for Docker API calls</td></tr>
+                    <tr><td><code>--docker-host</code></td><td>—</td><td><em>auto</em></td><td>Docker host override (defaults to DOCKER_HOST env / socket)</td></tr>
+                    <tr><td><code>--log-level</code></td><td>—</td><td><code>info</code></td><td>Log level: debug, info, warn, error</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>After editing, restart the service:</p>
+            <pre><code>sudo systemctl restart docker-dns</code></pre>
+
+            <h3>Configuration Notes</h3>
+            <ul>
+                <li><strong>IP</strong> — typically in the loopback range (<code>127.0.0.0/8</code>), but can be any interface. Change if another service uses the default.</li>
+                <li><strong>TTL</strong> — higher values improve performance for stable stacks; lower values give more real-time accuracy for dynamic containers.</li>
+                <li><strong>TLD</strong> — supports multiple TLDs. With <code>TLD=docker,local</code>, both <code>myapp.docker</code> and <code>myapp.local</code> resolve to the container's IP.</li>
+                <li><strong>Resolvers</strong> — specify multiple for redundancy. Can include your local DNS (Pi-hole, corporate resolver, etc.).</li>
+            </ul>
+        </section>
+
+        <section id="usage">
+            <h2>Usage</h2>
+
+            <h3>Resolve Containers by Name</h3>
+            <pre><code>dig mycontainer.docker @127.0.0.153 +short</code></pre>
+
+            <h3>Resolve External Domains</h3>
+            <p>Non-Docker queries are forwarded to your fallback resolvers:</p>
+            <pre><code>dig google.com @127.0.0.153 +short</code></pre>
+
+            <h3>Health Check</h3>
+            <pre><code>curl http://localhost:8080/health
+# {"status":"ok"}</code></pre>
+
+            <h3>Metrics</h3>
+            <pre><code>curl http://localhost:8080/metrics
+# {"queries_total":142,"cache_hits":98,"cache_misses":44,...}</code></pre>
+
+            <h3>CLI Help</h3>
+            <pre><code>sudo ./docker-dns -h
+Usage of docker-dns:
+  -ip string
+      IP address the DNS server listens on (default "127.0.0.153")
+  -tld string
+      Comma-separated managed top-level domains (default "docker")
+  -ttl int
+      TTL in seconds for cache entries and DNS responses (default 300)
+  -resolvers string
+      Comma-separated fallback DNS resolver IPs (default "8.8.8.8,1.1.1.1,8.8.4.4")
+  -forward-timeout duration
+      Per-resolver timeout for forwarded DNS queries (default 2s)</code></pre>
+
+            <p><strong>Note:</strong> <code>sudo</code> (or root) is required because port 53 is a <a href="https://www.w3.org/Daemon/User/Installation/PrivilegedPorts.html">privileged port</a>. The .deb package uses <code>CAP_NET_BIND_SERVICE</code> instead.</p>
+        </section>
+
+        <section id="systemd">
+            <h2>Systemd &amp; DNS Integration</h2>
+            <p>Docker's built-in DNS (<code>127.0.0.11</code>) only works container-to-container on user-defined networks. From the host, there's no way to resolve a container by name without manual intervention.</p>
+            <p>docker-dns solves this by running on the host and integrating with the system's DNS stack. Ubuntu and Debian handle DNS in fundamentally different ways, and the installer handles both automatically.</p>
+            <p>Full documentation covering systemd-resolved routing domains, plain resolv.conf, browser DNS-over-HTTPS caveats, and the tested configuration matrix is available in <a href="https://github.com/MedUnes/docker-dns/blob/master/docs/Systemd.md">docs/Systemd.md</a>.</p>
+
+            <h3>Tested Configurations</h3>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>OS</th><th>Version</th><th>DNS Method</th></tr></thead>
+                    <tbody>
+                    <tr><td>Noble</td><td>Ubuntu 24.04</td><td>systemd-resolved + routing domain</td></tr>
+                    <tr><td>Jammy</td><td>Ubuntu 22.04</td><td>systemd-resolved + routing domain</td></tr>
+                    <tr><td>Focal</td><td>Ubuntu 20.04</td><td>systemd-resolved + routing domain</td></tr>
+                    <tr><td>Trixie</td><td>Debian 13</td><td>plain resolv.conf</td></tr>
+                    <tr><td>Bookworm</td><td>Debian 12</td><td>plain resolv.conf</td></tr>
+                    <tr><td>Bullseye</td><td>Debian 11</td><td>plain resolv.conf</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="build">
+            <h2>Build from Source</h2>
+            <pre><code>git clone https://github.com/medunes/docker-dns.git
+cd docker-dns
+make build</code></pre>
+            <p>Run the binary:</p>
+            <pre><code>sudo ./bin/docker-dns --ip=127.0.0.153 --tld=docker</code></pre>
+            <p>Or download pre-built binaries from the <a href="https://github.com/MedUnes/docker-dns/releases">Releases</a> page.</p>
+        </section>
+
+        <section id="contributing">
+            <h2>Contributing</h2>
+            <p>Contributions are welcome.</p>
+            <pre><code>git checkout -b feature/YourFeature
+git commit -am 'Add YourFeature'
+git push origin feature/YourFeature</code></pre>
+            <p>Then open a Pull Request on <a href="https://github.com/medunes/docker-dns">GitHub</a>.</p>
+        </section>
+
+        <section id="license">
+            <h2>License</h2>
+            <p>This project is licensed under the AGPL License — see the <a href="https://github.com/medunes/docker-dns/blob/master/LICENSE">LICENSE</a> file for details.</p>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>&copy; <script>document.write(new Date().getFullYear())</script> MedUnes — docker-dns</p>
+    </footer>
+
+</div>
+</body>
+</html>

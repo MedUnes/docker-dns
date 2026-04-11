@@ -1,0 +1,14 @@
+#!/bin/bash
+
+PATH=$PATH:/bin:/usr/bin:/sbin/:/usr/sbin
+SERVICE_NAME=docker-dns
+
+case $1 in
+upgrade)
+    echo "Stopping ${SERVICE_NAME}.service for upgrade.."
+    systemctl stop "${SERVICE_NAME}.service" 2>/dev/null || true
+    ;;
+install)
+    # Nothing to do on fresh install — binary not yet extracted by dpkg
+    ;;
+esac

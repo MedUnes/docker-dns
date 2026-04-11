@@ -1,0 +1,31 @@
+FROM debian:12
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    systemd \
+    systemd-sysv \
+    dbus \
+    dnsutils \
+    iproute2 \
+    libcap2-bin \
+    ca-certificates \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Debian Bookworm does not use systemd-resolved by default.
+# Docker injects a working /etc/resolv.conf at runtime, so no DNS setup needed here.
+
+# Mask units that are problematic inside containers
+RUN systemctl mask \
+    systemd-firstboot.service \
+    systemd-udevd.service \
+    systemd-modules-load.service \
+    getty@.service \
+    serial-getty@.service \
+    console-getty.service \
+    systemd-logind.service
+
+# systemd expects this signal for clean shutdown
+STOPSIGNAL SIGRTMIN+3
+
+CMD ["/lib/systemd/systemd"]

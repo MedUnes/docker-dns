@@ -1,0 +1,45 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    systemd \
+    systemd-sysv \
+    dbus \
+    dnsutils \
+    iproute2 \
+    libcap2-bin \
+    ca-certificates \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Ensure systemd-resolved is enabled (Ubuntu Jammy default on real installs).
+# On 22.04 systemd-resolved is part of the systemd package, not a separate one.
+RUN systemctl enable systemd-resolved
+
+# In a container there's no DHCP/networkd to provide upstream DNS to resolved.
+# Configure a fallback so apt-get and other tools can resolve during the test.
+RUN mkdir -p /etc/systemd/resolved.conf.d && \
+    printf '[Resolve]\nFallbackDNS=8.8.8.8 1.1.1.1\nDNS=8.8.8.8\n' \
+    > /etc/systemd/resolved.conf.d/fallback.conf
+
+# Point resolv.conf to the stub resolver (Ubuntu Jammy default on real installs).
+# Docker bind-mounts /etc/resolv.conf at runtime, so we replace it early in boot.
+COPY setup-resolvconf.sh /usr/local/bin/setup-resolvconf.sh
+RUN chmod +x /usr/local/bin/setup-resolvconf.sh
+COPY setup-resolvconf.service /etc/systemd/system/setup-resolvconf.service
+RUN systemctl enable setup-resolvconf.service
+
+# Mask units that are problematic inside containers
+RUN systemctl mask \
+    systemd-firstboot.service \
+    systemd-udevd.service \
+    systemd-modules-load.service \
+    getty@.service \
+    serial-getty@.service \
+    console-getty.service \
+    systemd-logind.service
+
+# systemd expects this signal for clean shutdown
+STOPSIGNAL SIGRTMIN+3
+
+CMD ["/lib/systemd/systemd"]

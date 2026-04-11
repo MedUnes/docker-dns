@@ -1,0 +1,59 @@
+name: Test Pipeline
+
+on: [ push, pull_request ]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.25'
+
+      - name: Run Unit Tests
+        run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+  integration-tests:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:dind
+        options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.25'
+
+      - name: Start Docker
+        run: |
+          docker version
+          docker run -d --name test-nginx nginx:alpine
+
+      - name: Run Integration Tests
+        run: go run gotest.tools/gotestsum@latest --format=testdox -- -tags=integration -v
+
+  systemd-tests:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [noble, jammy, focal, trixie, bookworm, bullseye]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.25'
+
+      - name: Run systemd integration test (${{ matrix.os }})
+        run: make test-systemd OS=${{ matrix.os }}
