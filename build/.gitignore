@@ -1,7 +1,8 @@
 docker-dns
-!etc/docker-dns/docker-dns.conf
+!dpkg/etc/
+!dpkg/etc/docker-dns/
+!dpkg/etc/docker-dns/docker-dns.conf
 *.deb
 bin/*
 !bin/.gitkeep
-docker-dns
 build/dpkg/tmp_download
