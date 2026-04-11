@@ -59,7 +59,9 @@ cp -r "$DPKG_DIR/etc" "$STAGING_DIR/"
 
 # Build the .deb
 DEB_FILE="$DPKG_DIR/${PACKAGE_NAME}-${VERSION}_amd64.deb"
-dpkg-deb --root-owner-group --build "$STAGING_DIR" "$DEB_FILE"
+# Use xz compression for compatibility with older dpkg (e.g. Bullseye's 1.20.x,
+# which doesn't support the zstd default on newer hosts).
+dpkg-deb -Zxz --root-owner-group --build "$STAGING_DIR" "$DEB_FILE"
 
 echo "Package built: $DEB_FILE"
 
