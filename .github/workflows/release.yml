@@ -11,6 +11,8 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,14 +29,14 @@ jobs:
           version: '~> v2'
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.ACTION_SECRET }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Get release upload URL
         id: get_release_url
         run: |
           release_data=$(gh api repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME})
           echo "UPLOAD_URL=$(echo $release_data | jq -r '.upload_url' | sed 's/{.*}//')" >> $GITHUB_ENV
         env:
-          GH_TOKEN: ${{ secrets.ACTION_SECRET }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Debian Package
         run: |
           cd ./build/dpkg
@@ -45,4 +47,4 @@ jobs:
         run: |
           gh release upload "${GITHUB_REF_NAME}" ./build/dpkg/*.deb --repo "${GITHUB_REPOSITORY}"
         env:
-          GITHUB_TOKEN: ${{ secrets.ACTION_SECRET }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
