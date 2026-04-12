@@ -1,4 +1,8 @@
-# Docker DNS Resolver
+<h1 align="center">
+Docker DNS
+    <br>
+    <img src="./logo.png" width="200" alt="">
+</h1>
 
 [![Tests](https://github.com/MedUnes/docker-dns/actions/workflows/test.yml/badge.svg)](https://github.com/MedUnes/docker-dns/actions/workflows/test.yml) [![Release](https://github.com/MedUnes/docker-dns/actions/workflows/release.yml/badge.svg)](https://github.com/MedUnes/docker-dns/actions/workflows/release.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/medunes/docker-dns)](https://goreportcard.com/report/github.com/medunes/docker-dns) [![License](https://img.shields.io/github/license/medunes/docker-dns)](LICENSE) [![Go Reference](https://pkg.go.dev/badge/github.com/medunes/docker-dns.svg)](https://pkg.go.dev/github.com/medunes/docker-dns)
 
@@ -33,15 +37,15 @@ integrates with DNS resolution for each ditro/version..
 
 1. **Download the `.deb` Package**:
     - Go to the [Releases](https://github.com/MedUnes/docker-dns/releases) page.
-    - Find the release matching your desired version (e.g., `v1.0.0`).
+    - Find the release matching your desired version (e.g., `v1.0.2`).
     - Download the `.deb` file:
       ```
-      wget https://github.com/MedUnes/docker-dns/releases/download/v1.0.0/docker-dns-1.0.0_amd64.deb
+      wget https://github.com/MedUnes/docker-dns/releases/download/v1.0.2/docker-dns-1.0.2_amd64.deb
       ```
 
 2. **Install the Package**:
    ```bash
-   sudo dpkg -i docker-dns-1.0.0_amd64.deb
+   sudo dpkg -i docker-dns-1.0.2_amd64.deb
    ```
 
 ### Configuration
