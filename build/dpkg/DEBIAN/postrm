@@ -22,6 +22,10 @@ remove|purge)
     rm -f /etc/unbound/unbound.conf.d/docker-dns.conf
     systemctl restart unbound 2>/dev/null || true
 
+    # NetworkManager dispatcher — remove BEFORE restarting NM so a restart event
+    # cannot fire the dispatcher and re-add the nameserver to resolv.conf.
+    rm -f /etc/NetworkManager/dispatcher.d/docker-dns
+
     # NetworkManager dnsmasq
     rm -f /etc/NetworkManager/dnsmasq.d/docker-dns.conf
     systemctl restart NetworkManager 2>/dev/null || true
