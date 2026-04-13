@@ -11,12 +11,15 @@ between containers and the host.
 
 ## Features
 
-- **Automatic DNS Resolution**: Resolve Docker container names with a custom TLD to their respective IP addresses.
-- **Caching Mechanism**: Configurable TTL for DNS cache entries to improve performance.
-- **Simple Configuration**: Minimal setup with command-line options or a configuration file.
-- **Debian Package**: Easy-to-install `.deb` package for seamless integration.
-- **Fallback DNS**: Forwards non-Docker queries to configurable DNS servers.
-- **Lightweight and Fast**: Built with Go for high performance.
+- **Automatic DNS Resolution**: Resolve Docker container names with a custom TLD (default `.docker`) to their IP addresses. Supports multiple TLDs and containers on any Docker network.
+- **Fallback DNS**: Forwards non-Docker queries in parallel to configurable upstream resolvers (default: `8.8.8.8`, `1.1.1.1`, `8.8.4.4`), returning the first successful response.
+- **Caching**: TTL-based DNS cache with background eviction, size limits, and hit/miss telemetry.
+- **Rate Limiting**: Per-IP token-bucket rate limiter with automatic idle cleanup.
+- **Health & Metrics**: HTTP server on `:8080` exposes `/health` and `/metrics` (cache stats, query counts, error rates).
+- **UDP + TCP**: Full DNS protocol support with EDNS0 handling and proper truncation.
+- **Debian Package**: `.deb` package with automatic systemd integration and clean uninstall.
+- **Tested on 12 Configurations**: Full install → resolve → uninstall lifecycle CI on Ubuntu 20.04/22.04/24.04 and Debian 11/12/13, both server and desktop variants.
+- **Lightweight**: Single Go binary, minimal resource footprint.
 
 ## Architecture
 
@@ -146,23 +149,18 @@ integrates with DNS resolution for each ditro/version..
 
 ---
 
-## Important Notes
+## DNS Integration
 
-### Default Resolver Integration
+The `.deb` package auto-detects your system's DNS resolver and integrates accordingly:
 
-- While Docker DNS runs by default on a custom IP (not `127.0.0.1`), it is possible to use tools like `dig` to test
-  queries:
-  ```bash
-       dig mycontainer.docker @127.0.0.153 +short 
-  ```
-    - However, making Docker DNS the system-wide default resolver requires additional configuration or hacks.
+- **Ubuntu** (systemd-resolved): routing domain drop-in at `/etc/systemd/resolved.conf.d/docker-dns.conf` — only
+  `.docker` queries go to docker-dns, everything else is untouched
+- **Debian Desktop** (NetworkManager): dispatcher script at `/etc/NetworkManager/dispatcher.d/docker-dns` re-prepends
+  the nameserver after every NM event
+- **Debian Server** (plain resolv.conf): prepends `nameserver 127.0.0.153` to `/etc/resolv.conf`
 
-### Systemd-Resolved Compatibility: Direct integration with
-`systemd-resolved` is non-trivial and not recommended without advanced setup.
-
-### Protocol
-
-* `docker-dns` is configured to run on `UDP` mode only, so `TCP` requests won't be answered
+See [docs/Systemd.md](./docs/Systemd.md) for the full details, browser DNS-over-HTTPS caveats, and manual integration
+examples for custom resolvers (dnsmasq, unbound, Pi-hole).
 
 ---
 
@@ -192,17 +190,31 @@ integrates with DNS resolution for each ditro/version..
 - Once you have the binary generated, you can run at as follows (linux):
    ```bash
    sudo ./docker-dns -h
-      Usage of docker-dns:
-   -ip string
-      IP address the DNS server listens on (default "127.0.0.153")
-   -tld string
-      Comma-separated managed top-level domains for container resolution (default "docker")
-   -ttl int
-      TTL in seconds for cache entries and DNS responses (default 300)
-   -resolvers string
-      Comma-separated fallback DNS resolver IPs (default "8.8.8.8,1.1.1.1,8.8.4.4")
-   -forward-timeout duration
-      Per-resolver timeout for forwarded DNS queries (default 2s)
+   Usage of docker-dns:
+     -ip string
+         IP address the DNS server listens on (default "127.0.0.153")
+     -tld string
+         Comma-separated managed top-level domains for container resolution (default "docker")
+     -ttl int
+         TTL in seconds for cache entries and DNS responses (default 300)
+     -resolvers string
+         Comma-separated fallback DNS resolver IPs (default "8.8.8.8,1.1.1.1,8.8.4.4")
+     -forward-timeout duration
+         Per-resolver timeout for forwarded DNS queries (default 2s)
+     -rate-limit float
+         Max queries/sec per client IP; 0 disables rate limiting (default 100)
+     -rate-burst int
+         Burst allowance for per-IP rate limiting (default 50)
+     -max-cache-size int
+         Max DNS cache entries; 0 = unlimited (default 10000)
+     -http-addr string
+         Address for the health/metrics HTTP server; empty to disable (default ":8080")
+     -docker-timeout duration
+         Timeout for Docker API calls (default 5s)
+     -docker-host string
+         Docker host override (empty = use DOCKER_HOST env / socket default)
+     -log-level string
+         Log level: debug | info | warn | error (default "info")
    ```
 - P.S: `sudo` (or `root`) is required as the server will be listening on port `53`, which is
   a [previewed port](https://www.w3.org/Daemon/User/Installation/PrivilegedPorts.html)

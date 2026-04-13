@@ -1,0 +1,64 @@
+FROM debian:12
+
+# Real Debian Desktop (Bookworm) has NetworkManager but NOT systemd-resolved and
+# NOT resolvconf — NM uses its default dns=default plugin to write /etc/resolv.conf
+# directly. Installing resolvconf would switch NM to the dns=resolvconf plugin,
+# a different code path that doesn't match real-world Debian Desktop.
+#
+# This variant reproduces the gap: NM overwrites /etc/resolv.conf on restart,
+# dropping the nameserver line that docker-dns's postinst prepended.
+#
+# NM-in-container caveats: --privileged (already used by test-systemd.sh), dbus
+# (installed below), dummy kmod on the host kernel. NetworkManager-wait-online
+# is masked — with only a dummy interface it would block boot indefinitely.
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    systemd \
+    systemd-sysv \
+    dbus \
+    dnsutils \
+    iproute2 \
+    libcap2-bin \
+    ca-certificates \
+    network-manager \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Docker bind-mounts /etc/resolv.conf, which blocks NM's atomic rename() writes.
+# Unmount the bind-mount and seed a placeholder before NetworkManager starts.
+COPY setup-resolvconf-nm.sh /usr/local/bin/setup-resolvconf-nm.sh
+RUN chmod +x /usr/local/bin/setup-resolvconf-nm.sh
+COPY setup-resolvconf-nm.service /etc/systemd/system/setup-resolvconf-nm.service
+RUN systemctl enable setup-resolvconf-nm.service
+
+# NM by default leaves dummy* interfaces unmanaged. Explicitly mark dns-test0
+# as managed so NM activates the connection profile below and drives DNS.
+RUN mkdir -p /etc/NetworkManager/conf.d && \
+    printf '[main]\nplugins=keyfile\n[device]\nmatch-device=interface-name:dns-test0\nmanaged=true\n[keyfile]\nunmanaged-devices=none\n' \
+    > /etc/NetworkManager/conf.d/10-docker-dns-test.conf
+
+# type=dummy → NM creates the interface itself on activation.
+# dns=8.8.8.8;1.1.1.1; → NM has real DNS servers to push on restart — this is
+# what clobbers docker-dns's prepended nameserver and reproduces the gap.
+# Profile must be mode 0600 or NM refuses to load it.
+RUN mkdir -p /etc/NetworkManager/system-connections
+COPY dns-test0.nmconnection /etc/NetworkManager/system-connections/dns-test0.nmconnection
+RUN chmod 600 /etc/NetworkManager/system-connections/dns-test0.nmconnection && \
+    chown root:root /etc/NetworkManager/system-connections/dns-test0.nmconnection
+
+RUN systemctl enable NetworkManager && \
+    systemctl mask NetworkManager-wait-online.service || true
+
+RUN systemctl mask \
+    systemd-firstboot.service \
+    systemd-udevd.service \
+    systemd-modules-load.service \
+    getty@.service \
+    serial-getty@.service \
+    console-getty.service \
+    systemd-logind.service
+
+STOPSIGNAL SIGRTMIN+3
+
+CMD ["/lib/systemd/systemd"]

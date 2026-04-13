@@ -1,0 +1,62 @@
+FROM ubuntu:20.04
+
+# Real Ubuntu Desktop (Focal) ships BOTH NetworkManager AND systemd-resolved.
+# NM delegates DNS to resolved, so docker-dns's ~docker routing domain should
+# survive an NM restart. See Dockerfile.noble-desktop for NM-in-container notes.
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    systemd \
+    systemd-sysv \
+    dbus \
+    dnsutils \
+    iproute2 \
+    libcap2-bin \
+    ca-certificates \
+    network-manager \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# On 20.04 systemd-resolved is part of the systemd package, not separate.
+RUN systemctl enable systemd-resolved
+
+RUN mkdir -p /etc/systemd/resolved.conf.d && \
+    printf '[Resolve]\nFallbackDNS=8.8.8.8 1.1.1.1\nDNS=8.8.8.8\n' \
+    > /etc/systemd/resolved.conf.d/fallback.conf
+
+COPY setup-resolvconf.sh /usr/local/bin/setup-resolvconf.sh
+RUN chmod +x /usr/local/bin/setup-resolvconf.sh
+COPY setup-resolvconf.service /etc/systemd/system/setup-resolvconf.service
+RUN systemctl enable setup-resolvconf.service
+
+RUN mkdir -p /etc/NetworkManager/conf.d && \
+    printf '[main]\nplugins=keyfile\n[device]\nmatch-device=interface-name:dns-test0\nmanaged=true\n[keyfile]\nunmanaged-devices=none\n' \
+    > /etc/NetworkManager/conf.d/10-docker-dns-test.conf
+
+# Real Ubuntu Desktop ships this config so NM delegates DNS to systemd-resolved
+# instead of writing /etc/resolv.conf itself (Debian behavior). Without it, the
+# test would accidentally exercise the Debian code path while resolved happens
+# to still be running in the background.
+RUN printf '[main]\ndns=systemd-resolved\n' \
+    > /etc/NetworkManager/conf.d/10-dns-resolved.conf
+
+RUN mkdir -p /etc/NetworkManager/system-connections
+COPY dns-test0.nmconnection /etc/NetworkManager/system-connections/dns-test0.nmconnection
+RUN chmod 600 /etc/NetworkManager/system-connections/dns-test0.nmconnection && \
+    chown root:root /etc/NetworkManager/system-connections/dns-test0.nmconnection
+
+RUN systemctl enable NetworkManager && \
+    systemctl mask NetworkManager-wait-online.service || true
+
+RUN systemctl mask \
+    systemd-firstboot.service \
+    systemd-udevd.service \
+    systemd-modules-load.service \
+    getty@.service \
+    serial-getty@.service \
+    console-getty.service \
+    systemd-logind.service
+
+STOPSIGNAL SIGRTMIN+3
+
+CMD ["/lib/systemd/systemd"]

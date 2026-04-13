@@ -46,7 +46,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [noble, jammy, focal, trixie, bookworm, bullseye]
+        os: [noble, jammy, focal, trixie, bookworm, bullseye,
+             noble-desktop, jammy-desktop, focal-desktop,
+             trixie-desktop, bookworm-desktop, bullseye-desktop]
     steps:
       - uses: actions/checkout@v4
 

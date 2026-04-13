@@ -66,16 +66,22 @@ assert_dig_retry() {
     return 1
 }
 
-# Assert a dig query returns empty / NXDOMAIN (no match).
+# Assert a dig query does NOT resolve to an IP.
+# dig +short prints timeout/connection-error diagnostics (e.g.
+# ";; communications error to 127.0.0.53#53: timed out") to stdout, so a simple
+# emptiness check would misread those as a resolution. Only a bare IPv4 line
+# counts as "resolved" — everything else means "not resolving," which is what
+# this helper is checking for.
 assert_dig_empty() {
     local dig_args="$1"
     local description="$2"
 
     result=$(docker exec "$CONTAINER_NAME" dig $dig_args +short 2>/dev/null || true)
-    if [ -z "$result" ]; then
-        pass "$description -> empty (as expected)"
+    ips=$(echo "$result" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' || true)
+    if [ -z "$ips" ]; then
+        pass "$description -> not resolving (as expected)"
     else
-        fail "$description (expected empty, got '$result')"
+        fail "$description (expected no IP, got '$ips')"
     fi
 }
 
@@ -234,32 +240,53 @@ else
     fail "docker-dns service is NOT enabled"
 fi
 
-# Config assertion — branch on whether systemd-resolved is active
-HAS_RESOLVED=false
+# Config assertion — detect which of the three postinst branches was taken.
+# Mirrors postinst's logic: resolved first, then NetworkManager, then plain resolv.conf.
+MODE=resolvconf
 if docker exec "$CONTAINER_NAME" systemctl is-active --quiet systemd-resolved 2>/dev/null; then
-    HAS_RESOLVED=true
+    MODE=resolved
+elif docker exec "$CONTAINER_NAME" systemctl is-active --quiet NetworkManager 2>/dev/null; then
+    MODE=nm
 fi
+echo "Detected resolver-integration mode: $MODE"
 
-if [ "$HAS_RESOLVED" = true ]; then
-    if docker exec "$CONTAINER_NAME" test -f /etc/systemd/resolved.conf.d/docker-dns.conf; then
-        pass "resolved drop-in config exists"
-        if docker exec "$CONTAINER_NAME" grep -q 'Domains=.*~docker' /etc/systemd/resolved.conf.d/docker-dns.conf; then
-            pass "resolved drop-in contains Domains=~docker"
+case "$MODE" in
+    resolved)
+        if docker exec "$CONTAINER_NAME" test -f /etc/systemd/resolved.conf.d/docker-dns.conf; then
+            pass "resolved drop-in config exists"
+            if docker exec "$CONTAINER_NAME" grep -q 'Domains=.*~docker' /etc/systemd/resolved.conf.d/docker-dns.conf; then
+                pass "resolved drop-in contains Domains=~docker"
+            else
+                fail "resolved drop-in missing Domains=~docker"
+                docker exec "$CONTAINER_NAME" cat /etc/systemd/resolved.conf.d/docker-dns.conf
+            fi
         else
-            fail "resolved drop-in missing Domains=~docker"
-            docker exec "$CONTAINER_NAME" cat /etc/systemd/resolved.conf.d/docker-dns.conf
+            fail "resolved drop-in config does NOT exist"
         fi
-    else
-        fail "resolved drop-in config does NOT exist"
-    fi
-else
-    if docker exec "$CONTAINER_NAME" grep -q 'nameserver 127.0.0.153' /etc/resolv.conf; then
-        pass "/etc/resolv.conf contains nameserver 127.0.0.153"
-    else
-        fail "/etc/resolv.conf missing nameserver 127.0.0.153"
-        docker exec "$CONTAINER_NAME" cat /etc/resolv.conf
-    fi
-fi
+        ;;
+    nm)
+        if docker exec "$CONTAINER_NAME" test -x /etc/NetworkManager/dispatcher.d/docker-dns; then
+            pass "NM dispatcher script exists and is executable"
+        else
+            fail "NM dispatcher script missing or not executable"
+            docker exec "$CONTAINER_NAME" ls -l /etc/NetworkManager/dispatcher.d/ 2>/dev/null || true
+        fi
+        if docker exec "$CONTAINER_NAME" grep -q 'nameserver 127.0.0.153' /etc/resolv.conf; then
+            pass "/etc/resolv.conf contains nameserver 127.0.0.153"
+        else
+            fail "/etc/resolv.conf missing nameserver 127.0.0.153"
+            docker exec "$CONTAINER_NAME" cat /etc/resolv.conf
+        fi
+        ;;
+    resolvconf)
+        if docker exec "$CONTAINER_NAME" grep -q 'nameserver 127.0.0.153' /etc/resolv.conf; then
+            pass "/etc/resolv.conf contains nameserver 127.0.0.153"
+        else
+            fail "/etc/resolv.conf missing nameserver 127.0.0.153"
+            docker exec "$CONTAINER_NAME" cat /etc/resolv.conf
+        fi
+        ;;
+esac
 
 # Start a test Docker container for DNS resolution tests
 echo ""
@@ -281,6 +308,24 @@ echo ""
 echo "--- System-level resolution tests (dig without @) ---"
 assert_dig_retry "test-nginx.docker" "^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$" \
     "System: dig test-nginx.docker resolves through system resolver"
+
+# =====================================================================
+# Phase 5b: NetworkManager survivability (desktop variants only)
+# =====================================================================
+# On real Debian Desktop, NetworkManager writes /etc/resolv.conf directly (dns=default
+# plugin) and overwrites docker-dns's prepended nameserver on restart/DHCP-renewal.
+# On Ubuntu Desktop, NM delegates DNS to systemd-resolved, so the ~docker routing
+# domain survives. We exercise the system resolver (bare `dig`, no @127.0.0.153) so
+# this assertion fails precisely when NM has clobbered docker-dns from resolv.conf.
+if docker exec "$CONTAINER_NAME" systemctl is-active --quiet NetworkManager 2>/dev/null; then
+    echo ""
+    echo "=== Phase 5b: NetworkManager survivability ==="
+    echo "NetworkManager is active — restarting it and re-checking system resolver"
+    docker exec "$CONTAINER_NAME" systemctl restart NetworkManager
+    sleep 3
+    assert_dig_retry "test-nginx.docker" "^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$" \
+        "docker-dns resolution survives NetworkManager restart"
+fi
 
 # =====================================================================
 # Phase 6: Uninstall the .deb package
@@ -320,21 +365,37 @@ else
     fail "docker-dns service is still active after uninstall"
 fi
 
-# DNS config cleaned
-if [ "$HAS_RESOLVED" = true ]; then
-    if docker exec "$CONTAINER_NAME" test ! -f /etc/systemd/resolved.conf.d/docker-dns.conf; then
-        pass "resolved drop-in config removed"
-    else
-        fail "resolved drop-in config still exists after uninstall"
-    fi
-else
-    if ! docker exec "$CONTAINER_NAME" grep -q 'nameserver 127.0.0.153' /etc/resolv.conf 2>/dev/null; then
-        pass "nameserver 127.0.0.153 removed from /etc/resolv.conf"
-    else
-        fail "nameserver 127.0.0.153 still in /etc/resolv.conf after uninstall"
-        docker exec "$CONTAINER_NAME" cat /etc/resolv.conf
-    fi
-fi
+# DNS config cleaned — branch on the same MODE detected pre-install.
+case "$MODE" in
+    resolved)
+        if docker exec "$CONTAINER_NAME" test ! -f /etc/systemd/resolved.conf.d/docker-dns.conf; then
+            pass "resolved drop-in config removed"
+        else
+            fail "resolved drop-in config still exists after uninstall"
+        fi
+        ;;
+    nm)
+        if docker exec "$CONTAINER_NAME" test ! -e /etc/NetworkManager/dispatcher.d/docker-dns; then
+            pass "NM dispatcher script removed"
+        else
+            fail "NM dispatcher script still exists after uninstall"
+        fi
+        if ! docker exec "$CONTAINER_NAME" grep -q 'nameserver 127.0.0.153' /etc/resolv.conf 2>/dev/null; then
+            pass "nameserver 127.0.0.153 removed from /etc/resolv.conf"
+        else
+            fail "nameserver 127.0.0.153 still in /etc/resolv.conf after uninstall"
+            docker exec "$CONTAINER_NAME" cat /etc/resolv.conf
+        fi
+        ;;
+    resolvconf)
+        if ! docker exec "$CONTAINER_NAME" grep -q 'nameserver 127.0.0.153' /etc/resolv.conf 2>/dev/null; then
+            pass "nameserver 127.0.0.153 removed from /etc/resolv.conf"
+        else
+            fail "nameserver 127.0.0.153 still in /etc/resolv.conf after uninstall"
+            docker exec "$CONTAINER_NAME" cat /etc/resolv.conf
+        fi
+        ;;
+esac
 
 # System DNS still works after uninstall
 echo ""

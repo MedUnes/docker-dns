@@ -1,0 +1,13 @@
+[connection]
+id=dns-test0
+type=dummy
+interface-name=dns-test0
+autoconnect=true
+
+[ipv4]
+method=manual
+address1=10.99.99.2/24
+dns=8.8.8.8;1.1.1.1;
+
+[ipv6]
+method=disabled

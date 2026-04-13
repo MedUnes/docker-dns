@@ -1,0 +1,12 @@
+[Unit]
+Description=Unmount Docker's bind-mounted /etc/resolv.conf so NetworkManager can manage it
+DefaultDependencies=no
+Before=NetworkManager.service
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/setup-resolvconf-nm.sh
+
+[Install]
+WantedBy=sysinit.target
