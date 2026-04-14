@@ -35,7 +35,7 @@ RUN systemctl enable setup-resolvconf-nm.service
 # NM by default leaves dummy* interfaces unmanaged. Explicitly mark dns-test0
 # as managed so NM activates the connection profile below and drives DNS.
 RUN mkdir -p /etc/NetworkManager/conf.d && \
-    printf '[main]\nplugins=keyfile\n[device]\nmatch-device=interface-name:dns-test0\nmanaged=true\n[keyfile]\nunmanaged-devices=none\n' \
+    printf '[main]\nplugins=keyfile\n[device]\nmatch-device=interface-name:dns-test0\nmanaged=true\n[keyfile]\nunmanaged-devices=interface-name:eth0\n' \
     > /etc/NetworkManager/conf.d/10-docker-dns-test.conf
 
 # type=dummy → NM creates the interface itself on activation.

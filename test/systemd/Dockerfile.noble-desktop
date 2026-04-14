@@ -37,7 +37,7 @@ RUN systemctl enable setup-resolvconf.service
 # NM by default leaves dummy* interfaces unmanaged. Explicitly mark dns-test0
 # as managed so NM activates the connection profile below and drives DNS.
 RUN mkdir -p /etc/NetworkManager/conf.d && \
-    printf '[main]\nplugins=keyfile\n[device]\nmatch-device=interface-name:dns-test0\nmanaged=true\n[keyfile]\nunmanaged-devices=none\n' \
+    printf '[main]\nplugins=keyfile\n[device]\nmatch-device=interface-name:dns-test0\nmanaged=true\n[keyfile]\nunmanaged-devices=interface-name:eth0\n' \
     > /etc/NetworkManager/conf.d/10-docker-dns-test.conf
 
 # Real Ubuntu Desktop ships this config so NM delegates DNS to systemd-resolved
@@ -52,6 +52,11 @@ RUN printf '[main]\ndns=systemd-resolved\n' \
 # Profile must be mode 0600 or NM refuses to load it.
 RUN mkdir -p /etc/NetworkManager/system-connections
 COPY dns-test0.nmconnection /etc/NetworkManager/system-connections/dns-test0.nmconnection
+# Ubuntu Desktop: resolved handles upstream DNS (via fallback.conf), not NM.
+# Remove dns= from the NM profile so NM doesn't push a ~. default route domain
+# to resolved — dns-test0 is a dummy interface that can't route to the internet,
+# so resolved would time out trying to reach 8.8.8.8 through it.
+RUN sed -i '/^dns=/d' /etc/NetworkManager/system-connections/dns-test0.nmconnection
 RUN chmod 600 /etc/NetworkManager/system-connections/dns-test0.nmconnection && \
     chown root:root /etc/NetworkManager/system-connections/dns-test0.nmconnection
 
