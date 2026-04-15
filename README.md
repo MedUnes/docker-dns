@@ -40,15 +40,15 @@ integrates with DNS resolution for each ditro/version..
 
 1. **Download the `.deb` Package**:
     - Go to the [Releases](https://github.com/MedUnes/docker-dns/releases) page.
-    - Find the release matching your desired version (e.g., `v1.0.2`).
+    - Find the release matching your desired version (e.g., `v1.0.4`).
     - Download the `.deb` file:
       ```
-      wget https://github.com/MedUnes/docker-dns/releases/download/v1.0.2/docker-dns-1.0.2_amd64.deb
+      wget https://github.com/MedUnes/docker-dns/releases/download/v1.0.4/docker-dns-1.0.4_amd64.deb
       ```
 
 2. **Install the Package**:
    ```bash
-   sudo dpkg -i docker-dns-1.0.2_amd64.deb
+   sudo dpkg -i docker-dns-1.0.4_amd64.deb
    ```
 
 ### Configuration
@@ -153,7 +153,7 @@ integrates with DNS resolution for each ditro/version..
 
 The `.deb` package auto-detects your system's DNS resolver and integrates accordingly:
 
-- **Ubuntu** (systemd-resolved): routing domain drop-in at `/etc/systemd/resolved.conf.d/docker-dns.conf` — only
+- **Ubuntu** (systemd-resolved): routing domain drop-in at `/etc/systemd/resolved.conf.d/docker-dns.conf`: only
   `.docker` queries go to docker-dns, everything else is untouched
 - **Debian Desktop** (NetworkManager): dispatcher script at `/etc/NetworkManager/dispatcher.d/docker-dns` re-prepends
   the nameserver after every NM event

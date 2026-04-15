@@ -1,7 +1,7 @@
 FROM debian:12
 
 # Real Debian Desktop (Bookworm) has NetworkManager but NOT systemd-resolved and
-# NOT resolvconf — NM uses its default dns=default plugin to write /etc/resolv.conf
+# NOT resolvconf: NM uses its default dns=default plugin to write /etc/resolv.conf
 # directly. Installing resolvconf would switch NM to the dns=resolvconf plugin,
 # a different code path that doesn't match real-world Debian Desktop.
 #
@@ -10,7 +10,7 @@ FROM debian:12
 #
 # NM-in-container caveats: --privileged (already used by test-systemd.sh), dbus
 # (installed below), dummy kmod on the host kernel. NetworkManager-wait-online
-# is masked — with only a dummy interface it would block boot indefinitely.
+# is masked: with only a dummy interface it would block boot indefinitely.
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -39,7 +39,7 @@ RUN mkdir -p /etc/NetworkManager/conf.d && \
     > /etc/NetworkManager/conf.d/10-docker-dns-test.conf
 
 # type=dummy → NM creates the interface itself on activation.
-# dns=8.8.8.8;1.1.1.1; → NM has real DNS servers to push on restart — this is
+# dns=8.8.8.8;1.1.1.1; → NM has real DNS servers to push on restart: this is
 # what clobbers docker-dns's prepended nameserver and reproduces the gap.
 # Profile must be mode 0600 or NM refuses to load it.
 RUN mkdir -p /etc/NetworkManager/system-connections

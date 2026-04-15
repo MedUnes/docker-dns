@@ -70,7 +70,7 @@ assert_dig_retry() {
 # dig +short prints timeout/connection-error diagnostics (e.g.
 # ";; communications error to 127.0.0.53#53: timed out") to stdout, so a simple
 # emptiness check would misread those as a resolution. Only a bare IPv4 line
-# counts as "resolved" — everything else means "not resolving," which is what
+# counts as "resolved": everything else means "not resolving," which is what
 # this helper is checking for.
 assert_dig_empty() {
     local dig_args="$1"
@@ -85,7 +85,7 @@ assert_dig_empty() {
     fi
 }
 
-# Cleanup function — always runs on exit
+# Cleanup function: always runs on exit
 cleanup() {
     echo ""
     echo "=== Cleanup ==="
@@ -240,7 +240,7 @@ else
     fail "docker-dns service is NOT enabled"
 fi
 
-# Config assertion — detect which of the three postinst branches was taken.
+# Config assertion: detect which of the three postinst branches was taken.
 # Mirrors postinst's logic: resolved first, then NetworkManager, then plain resolv.conf.
 MODE=resolvconf
 if docker exec "$CONTAINER_NAME" systemctl is-active --quiet systemd-resolved 2>/dev/null; then
@@ -320,7 +320,7 @@ assert_dig_retry "test-nginx.docker" "^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$" \
 if docker exec "$CONTAINER_NAME" systemctl is-active --quiet NetworkManager 2>/dev/null; then
     echo ""
     echo "=== Phase 5b: NetworkManager survivability ==="
-    echo "NetworkManager is active — restarting it and re-checking system resolver"
+    echo "NetworkManager is active: restarting it and re-checking system resolver"
     docker exec "$CONTAINER_NAME" systemctl restart NetworkManager
     sleep 3
     assert_dig_retry "test-nginx.docker" "^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$" \
@@ -365,7 +365,7 @@ else
     fail "docker-dns service is still active after uninstall"
 fi
 
-# DNS config cleaned — branch on the same MODE detected pre-install.
+# DNS config cleaned: branch on the same MODE detected pre-install.
 case "$MODE" in
     resolved)
         if docker exec "$CONTAINER_NAME" test ! -f /etc/systemd/resolved.conf.d/docker-dns.conf; then

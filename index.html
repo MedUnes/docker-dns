@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>docker-dns — Docker Container DNS Resolver</title>
+    <title>docker-dns: Docker Container DNS Resolver</title>
     <meta name="description" content="A lightweight DNS server that resolves Docker container names to their IP addresses from the host machine.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -219,16 +219,16 @@
         <section id="features">
             <h2>Features</h2>
             <ul>
-                <li><strong>Automatic DNS Resolution</strong> — resolve Docker container names with a custom TLD (default <code>.docker</code>) to their IP addresses. Supports multiple TLDs and containers on any Docker network.</li>
-                <li><strong>Fallback DNS</strong> — forwards non-Docker queries in parallel to configurable upstream resolvers (default: <code>8.8.8.8</code>, <code>1.1.1.1</code>, <code>8.8.4.4</code>), returning the first successful response.</li>
-                <li><strong>Caching</strong> — TTL-based DNS cache with background eviction, size limits, and hit/miss telemetry.</li>
-                <li><strong>Singleflight</strong> — concurrent cache misses for the same name are collapsed into a single Docker API call (thundering-herd protection).</li>
-                <li><strong>Rate Limiting</strong> — per-IP token-bucket rate limiter with automatic idle cleanup.</li>
-                <li><strong>Health &amp; Metrics</strong> — HTTP server on <code>:8080</code> exposes <code>/health</code> and <code>/metrics</code> (cache stats, query counts, error rates).</li>
-                <li><strong>UDP + TCP</strong> — full DNS protocol support with EDNS0 handling and proper truncation.</li>
-                <li><strong>Debian Package</strong> — <code>.deb</code> package with automatic systemd integration and clean uninstall.</li>
-                <li><strong>Tested on 12 Configurations</strong> — full install → resolve → uninstall lifecycle CI on Ubuntu 20.04/22.04/24.04 and Debian 11/12/13, both server and desktop variants.</li>
-                <li><strong>Lightweight</strong> — single Go binary, minimal resource footprint.</li>
+                <li><strong>Automatic DNS Resolution</strong>: resolve Docker container names with a custom TLD (default <code>.docker</code>) to their IP addresses. Supports multiple TLDs and containers on any Docker network.</li>
+                <li><strong>Fallback DNS</strong>: forwards non-Docker queries in parallel to configurable upstream resolvers (default: <code>8.8.8.8</code>, <code>1.1.1.1</code>, <code>8.8.4.4</code>), returning the first successful response.</li>
+                <li><strong>Caching</strong>: TTL-based DNS cache with background eviction, size limits, and hit/miss telemetry.</li>
+                <li><strong>Singleflight</strong>: concurrent cache misses for the same name are collapsed into a single Docker API call (thundering-herd protection).</li>
+                <li><strong>Rate Limiting</strong>: per-IP token-bucket rate limiter with automatic idle cleanup.</li>
+                <li><strong>Health &amp; Metrics</strong>: HTTP server on <code>:8080</code> exposes <code>/health</code> and <code>/metrics</code> (cache stats, query counts, error rates).</li>
+                <li><strong>UDP + TCP</strong>: full DNS protocol support with EDNS0 handling and proper truncation.</li>
+                <li><strong>Debian Package</strong>: <code>.deb</code> package with automatic systemd integration and clean uninstall.</li>
+                <li><strong>Tested on 12 Configurations</strong>: full install → resolve → uninstall lifecycle CI on Ubuntu 20.04/22.04/24.04 and Debian 11/12/13, both server and desktop variants.</li>
+                <li><strong>Lightweight</strong>: single Go binary, minimal resource footprint.</li>
             </ul>
         </section>
 
@@ -245,8 +245,8 @@
 
             <h3>Download and Install</h3>
             <p>Go to the <a href="https://github.com/MedUnes/docker-dns/releases">Releases</a> page, download the <code>.deb</code> for your version, and install:</p>
-            <pre><code>wget https://github.com/MedUnes/docker-dns/releases/download/v1.0.2/docker-dns-1.0.2_amd64.deb
-sudo dpkg -i docker-dns-1.0.2_amd64.deb</code></pre>
+            <pre><code>wget https://github.com/MedUnes/docker-dns/releases/download/v1.0.4/docker-dns-1.0.4_amd64.deb
+sudo dpkg -i docker-dns-1.0.4_amd64.deb</code></pre>
 
             <p>The installer automatically detects your DNS resolver and integrates accordingly:</p>
             <div class="table-wrap">
@@ -288,14 +288,14 @@ DEFAULT_RESOLVER=8.8.8.8,1.1.1.1,8.8.4.4</code></pre>
                     <tr><td><code>--tld</code></td><td><code>TLD</code></td><td><code>docker</code></td><td>Comma-separated managed TLDs for container resolution</td></tr>
                     <tr><td><code>--ttl</code></td><td><code>TTL</code></td><td><code>300</code></td><td>TTL in seconds for cache entries and DNS responses</td></tr>
                     <tr><td><code>--resolvers</code></td><td><code>DEFAULT_RESOLVER</code></td><td><code>8.8.8.8,1.1.1.1,8.8.4.4</code></td><td>Comma-separated fallback DNS resolver IPs</td></tr>
-                    <tr><td><code>--forward-timeout</code></td><td>—</td><td><code>2s</code></td><td>Per-resolver timeout for forwarded DNS queries</td></tr>
-                    <tr><td><code>--rate-limit</code></td><td>—</td><td><code>100</code></td><td>Max queries/sec per client IP (0 disables)</td></tr>
-                    <tr><td><code>--rate-burst</code></td><td>—</td><td><code>50</code></td><td>Burst allowance for rate limiting</td></tr>
-                    <tr><td><code>--max-cache-size</code></td><td>—</td><td><code>10000</code></td><td>Max DNS cache entries (0 = unlimited)</td></tr>
-                    <tr><td><code>--http-addr</code></td><td>—</td><td><code>:8080</code></td><td>Health/metrics HTTP server address (empty to disable)</td></tr>
-                    <tr><td><code>--docker-timeout</code></td><td>—</td><td><code>5s</code></td><td>Timeout for Docker API calls</td></tr>
-                    <tr><td><code>--docker-host</code></td><td>—</td><td><em>auto</em></td><td>Docker host override (defaults to DOCKER_HOST env / socket)</td></tr>
-                    <tr><td><code>--log-level</code></td><td>—</td><td><code>info</code></td><td>Log level: debug, info, warn, error</td></tr>
+                    <tr><td><code>--forward-timeout</code></td><td>X</td><td><code>2s</code></td><td>Per-resolver timeout for forwarded DNS queries</td></tr>
+                    <tr><td><code>--rate-limit</code></td><td>X</td><td><code>100</code></td><td>Max queries/sec per client IP (0 disables)</td></tr>
+                    <tr><td><code>--rate-burst</code></td><td>X</td><td><code>50</code></td><td>Burst allowance for rate limiting</td></tr>
+                    <tr><td><code>--max-cache-size</code></td><td>X</td><td><code>10000</code></td><td>Max DNS cache entries (0 = unlimited)</td></tr>
+                    <tr><td><code>--http-addr</code></td><td>X</td><td><code>:8080</code></td><td>Health/metrics HTTP server address (empty to disable)</td></tr>
+                    <tr><td><code>--docker-timeout</code></td><td>X</td><td><code>5s</code></td><td>Timeout for Docker API calls</td></tr>
+                    <tr><td><code>--docker-host</code></td><td>X</td><td><em>auto</em></td><td>Docker host override (defaults to DOCKER_HOST env / socket)</td></tr>
+                    <tr><td><code>--log-level</code></td><td>X</td><td><code>info</code></td><td>Log level: debug, info, warn, error</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -305,10 +305,10 @@ DEFAULT_RESOLVER=8.8.8.8,1.1.1.1,8.8.4.4</code></pre>
 
             <h3>Configuration Notes</h3>
             <ul>
-                <li><strong>IP</strong> — typically in the loopback range (<code>127.0.0.0/8</code>), but can be any interface. Change if another service uses the default.</li>
-                <li><strong>TTL</strong> — higher values improve performance for stable stacks; lower values give more real-time accuracy for dynamic containers.</li>
-                <li><strong>TLD</strong> — supports multiple TLDs. With <code>TLD=docker,local</code>, both <code>myapp.docker</code> and <code>myapp.local</code> resolve to the container's IP.</li>
-                <li><strong>Resolvers</strong> — specify multiple for redundancy. Can include your local DNS (Pi-hole, corporate resolver, etc.).</li>
+                <li><strong>IP</strong>: typically in the loopback range (<code>127.0.0.0/8</code>), but can be any interface. Change if another service uses the default.</li>
+                <li><strong>TTL</strong>: higher values improve performance for stable stacks; lower values give more real-time accuracy for dynamic containers.</li>
+                <li><strong>TLD</strong>: supports multiple TLDs. With <code>TLD=docker,local</code>, both <code>myapp.docker</code> and <code>myapp.local</code> resolve to the container's IP.</li>
+                <li><strong>Resolvers</strong>: specify multiple for redundancy. Can include your local DNS (Pi-hole, corporate resolver, etc.).</li>
             </ul>
         </section>
 
@@ -410,13 +410,13 @@ git push origin feature/YourFeature</code></pre>
 
         <section id="license">
             <h2>License</h2>
-            <p>This project is licensed under the AGPL License — see the <a href="https://github.com/medunes/docker-dns/blob/master/LICENSE">LICENSE</a> file for details.</p>
+            <p>This project is licensed under the AGPL License: see the <a href="https://github.com/medunes/docker-dns/blob/master/LICENSE">LICENSE</a> file for details.</p>
         </section>
 
     </main>
 
     <footer>
-        <p>&copy; <script>document.write(new Date().getFullYear())</script> MedUnes — docker-dns</p>
+        <p>&copy; <script>document.write(new Date().getFullYear())</script> MedUnes: docker-dns</p>
     </footer>
 
 </div>

@@ -9,6 +9,6 @@ upgrade)
     systemctl stop "${SERVICE_NAME}.service" 2>/dev/null || true
     ;;
 install)
-    # Nothing to do on fresh install — binary not yet extracted by dpkg
+    # Nothing to do on fresh install: binary not yet extracted by dpkg
     ;;
 esac

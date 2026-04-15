@@ -1,7 +1,7 @@
 FROM debian:trixie
 
 # Real Debian Desktop (Trixie) has NetworkManager but NOT systemd-resolved and
-# NOT resolvconf — see Dockerfile.bookworm-desktop for rationale and NM-in-container
+# NOT resolvconf: see Dockerfile.bookworm-desktop for rationale and NM-in-container
 # notes. This variant reproduces the same NM-overwrites-resolv.conf gap.
 
 ENV DEBIAN_FRONTEND=noninteractive
