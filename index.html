@@ -215,30 +215,6 @@
     </nav>
 
     <main>
-
-        <section id="features">
-            <h2>Features</h2>
-            <ul>
-                <li><strong>Automatic DNS Resolution</strong>: resolve Docker container names with a custom TLD (default <code>.docker</code>) to their IP addresses. Supports multiple TLDs and containers on any Docker network.</li>
-                <li><strong>Fallback DNS</strong>: forwards non-Docker queries in parallel to configurable upstream resolvers (default: <code>8.8.8.8</code>, <code>1.1.1.1</code>, <code>8.8.4.4</code>), returning the first successful response.</li>
-                <li><strong>Caching</strong>: TTL-based DNS cache with background eviction, size limits, and hit/miss telemetry.</li>
-                <li><strong>Singleflight</strong>: concurrent cache misses for the same name are collapsed into a single Docker API call (thundering-herd protection).</li>
-                <li><strong>Rate Limiting</strong>: per-IP token-bucket rate limiter with automatic idle cleanup.</li>
-                <li><strong>Health &amp; Metrics</strong>: HTTP server on <code>:8080</code> exposes <code>/health</code> and <code>/metrics</code> (cache stats, query counts, error rates).</li>
-                <li><strong>UDP + TCP</strong>: full DNS protocol support with EDNS0 handling and proper truncation.</li>
-                <li><strong>Debian Package</strong>: <code>.deb</code> package with automatic systemd integration and clean uninstall.</li>
-                <li><strong>Tested on 12 Configurations</strong>: full install -> resolve -> uninstall lifecycle CI on Ubuntu 20.04/22.04/24.04 and Debian 11/12/13, both server and desktop variants.</li>
-                <li><strong>Lightweight</strong>: single Go binary, minimal resource footprint.</li>
-            </ul>
-        </section>
-
-        <section id="architecture">
-            <h2>Architecture</h2>
-            <p>The diagram below shows how a DNS query flows through the system, from the network listeners down to Docker or upstream resolvers.</p>
-            <img src="architecture.png" alt="docker-dns architecture" style="max-width:100%; border-radius:8px; border:1px solid var(--border); margin:1rem 0;">
-            <p>Queries for managed TLDs (like <code>.docker</code> or <code>.local</code>) are resolved by inspecting the matching Docker container. A singleflight gate prevents concurrent cache misses from hammering the Docker API. All other queries are forwarded in parallel to the configured upstream resolvers, returning the first successful response.</p>
-        </section>
-
         <section id="installation">
             <h2>Installation (Linux/Debian)</h2>
             <p><strong>Important:</strong> Read the <a href="https://github.com/MedUnes/docker-dns/blob/master/docs/Systemd.md">Systemd &amp; DNS documentation</a> for a deep overview on how systemd integrates with DNS resolution across distros.</p>
@@ -267,6 +243,29 @@ sudo dpkg -i docker-dns-1.0.4_amd64.deb</code></pre>
             <h3>Uninstall</h3>
             <p>All integration changes are reversed automatically on removal:</p>
             <pre><code>sudo dpkg -r docker-dns</code></pre>
+        </section>
+
+        <section id="features">
+            <h2>Features</h2>
+            <ul>
+                <li><strong>Automatic DNS Resolution</strong>: resolve Docker container names with a custom TLD (default <code>.docker</code>) to their IP addresses. Supports multiple TLDs and containers on any Docker network.</li>
+                <li><strong>Fallback DNS</strong>: forwards non-Docker queries in parallel to configurable upstream resolvers (default: <code>8.8.8.8</code>, <code>1.1.1.1</code>, <code>8.8.4.4</code>), returning the first successful response.</li>
+                <li><strong>Caching</strong>: TTL-based DNS cache with background eviction, size limits, and hit/miss telemetry.</li>
+                <li><strong>Singleflight</strong>: concurrent cache misses for the same name are collapsed into a single Docker API call (thundering-herd protection).</li>
+                <li><strong>Rate Limiting</strong>: per-IP token-bucket rate limiter with automatic idle cleanup.</li>
+                <li><strong>Health &amp; Metrics</strong>: HTTP server on <code>:8080</code> exposes <code>/health</code> and <code>/metrics</code> (cache stats, query counts, error rates).</li>
+                <li><strong>UDP + TCP</strong>: full DNS protocol support with EDNS0 handling and proper truncation.</li>
+                <li><strong>Debian Package</strong>: <code>.deb</code> package with automatic systemd integration and clean uninstall.</li>
+                <li><strong>Tested on 12 Configurations</strong>: full install -> resolve -> uninstall lifecycle CI on Ubuntu 20.04/22.04/24.04 and Debian 11/12/13, both server and desktop variants.</li>
+                <li><strong>Lightweight</strong>: single Go binary, minimal resource footprint.</li>
+            </ul>
+        </section>
+
+        <section id="architecture">
+            <h2>Architecture</h2>
+            <p>The diagram below shows how a DNS query flows through the system, from the network listeners down to Docker or upstream resolvers.</p>
+            <img src="architecture.png" alt="docker-dns architecture" style="max-width:100%; border-radius:8px; border:1px solid var(--border); margin:1rem 0;">
+            <p>Queries for managed TLDs (like <code>.docker</code> or <code>.local</code>) are resolved by inspecting the matching Docker container. A singleflight gate prevents concurrent cache misses from hammering the Docker API. All other queries are forwarded in parallel to the configured upstream resolvers, returning the first successful response.</p>
         </section>
 
         <section id="configuration">
