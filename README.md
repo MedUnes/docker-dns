@@ -18,7 +18,7 @@ between containers and the host.
 - **Health & Metrics**: HTTP server on `:8080` exposes `/health` and `/metrics` (cache stats, query counts, error rates).
 - **UDP + TCP**: Full DNS protocol support with EDNS0 handling and proper truncation.
 - **Debian Package**: `.deb` package with automatic systemd integration and clean uninstall.
-- **Tested on 12 Configurations**: Full install → resolve → uninstall lifecycle CI on Ubuntu 20.04/22.04/24.04 and Debian 11/12/13, both server and desktop variants.
+- **Tested on 12 Configurations**: Full install -> resolve -> uninstall lifecycle CI on Ubuntu 20.04/22.04/24.04 and Debian 11/12/13, both server and desktop variants.
 - **Lightweight**: Single Go binary, minimal resource footprint.
 
 ## Architecture

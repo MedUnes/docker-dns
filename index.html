@@ -194,7 +194,7 @@
             </div>
             <div class="terminal-body">
                 <span class="prompt">$</span> docker run -d --name myapi nginx:alpine<br>
-                <span class="prompt">$</span> dig myapi.docker @127.0.0.153 +short<br>
+                <span class="prompt">$</span> dig myapi.docker +short<br>
                 <span class="output">172.17.0.2</span><br>
                 <span class="prompt">$</span> curl http://myapi.docker<br>
                 <span class="output">&lt;html&gt;Welcome to nginx!&lt;/html&gt;</span>
@@ -227,7 +227,7 @@
                 <li><strong>Health &amp; Metrics</strong>: HTTP server on <code>:8080</code> exposes <code>/health</code> and <code>/metrics</code> (cache stats, query counts, error rates).</li>
                 <li><strong>UDP + TCP</strong>: full DNS protocol support with EDNS0 handling and proper truncation.</li>
                 <li><strong>Debian Package</strong>: <code>.deb</code> package with automatic systemd integration and clean uninstall.</li>
-                <li><strong>Tested on 12 Configurations</strong>: full install → resolve → uninstall lifecycle CI on Ubuntu 20.04/22.04/24.04 and Debian 11/12/13, both server and desktop variants.</li>
+                <li><strong>Tested on 12 Configurations</strong>: full install -> resolve -> uninstall lifecycle CI on Ubuntu 20.04/22.04/24.04 and Debian 11/12/13, both server and desktop variants.</li>
                 <li><strong>Lightweight</strong>: single Go binary, minimal resource footprint.</li>
             </ul>
         </section>

@@ -81,8 +81,8 @@ Domains=~docker
 
 The `~` prefix on `docker` makes it a routing domain, not a search domain. This tells systemd-resolved:
 
-- Queries for `*.docker` → forward to 127.0.0.153 (docker-dns)
-- All other queries → unchanged, forwarded to whatever DNS the network provides
+- Queries for `*.docker` -> forward to 127.0.0.153 (docker-dns)
+- All other queries -> unchanged, forwarded to whatever DNS the network provides
 
 This is the same mechanism used by VPNs, LXD, and corporate split-DNS setups.
 
@@ -173,7 +173,7 @@ stack is untouched.
 
 Browsers do not use glibc's `getaddrinfo()`. They read `/etc/resolv.conf` and issue DNS queries directly. This means:
 
-- **On Ubuntu** (resolv.conf → 127.0.0.53): browser queries go through systemd-resolved, routing domains work, `.docker`
+- **On Ubuntu** (resolv.conf -> 127.0.0.53): browser queries go through systemd-resolved, routing domains work, `.docker`
   queries reach docker-dns. ✓
 - **On Debian** (resolv.conf is a plain file): the browser queries whatever nameservers are listed. If docker-dns is
   listed, it works. ✓
@@ -188,7 +188,7 @@ Modern browsers can bypass system DNS entirely:
   known DoH endpoint, Chrome falls back to plain DNS. This usually works.
 
 If Firefox DoH is on, `.docker` domains will not resolve. Users need to either disable DoH in Firefox settings (
-Privacy & Security → DNS over HTTPS → Off) or use a Firefox enterprise policy:
+Privacy & Security -> DNS over HTTPS -> Off) or use a Firefox enterprise policy:
 
 ```json
 {
@@ -245,7 +245,7 @@ Each `systemctl restart` is guarded with `2>/dev/null || true` so it silently sk
 
 ## Tested Configurations
 
-The systemd integration tests (`make test-systemd OS=<codename>`) verify the full install → resolve → uninstall
+The systemd integration tests (`make test-systemd OS=<codename>`) verify the full install -> resolve -> uninstall
 lifecycle on each target. Both the direct path (`dig @127.0.0.153`) and the system-level path (`dig` without `@`, going
 through whatever the OS uses for DNS) are tested.
 

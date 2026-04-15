@@ -91,7 +91,7 @@ func TestHandleLocal_AAAA_EmptyNoError(t *testing.T) {
 	}
 	addr := startTestDNSServer(t, dc, nil)
 
-	// IPv4-only container → NOERROR with empty answer section for AAAA.
+	// IPv4-only container -> NOERROR with empty answer section for AAAA.
 	resp := queryDNS(t, addr, "myapp.docker.", dns.TypeAAAA)
 	if resp.Rcode != dns.RcodeSuccess {
 		t.Errorf("expected NOERROR for AAAA, got %s", dns.RcodeToString[resp.Rcode])

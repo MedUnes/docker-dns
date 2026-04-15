@@ -47,8 +47,8 @@ RUN mkdir -p /etc/NetworkManager/conf.d && \
 RUN printf '[main]\ndns=systemd-resolved\n' \
     > /etc/NetworkManager/conf.d/10-dns-resolved.conf
 
-# type=dummy → NM creates the interface itself on activation.
-# dns=8.8.8.8;1.1.1.1; → NM has real DNS servers to push on restart.
+# type=dummy -> NM creates the interface itself on activation.
+# dns=8.8.8.8;1.1.1.1; -> NM has real DNS servers to push on restart.
 # Profile must be mode 0600 or NM refuses to load it.
 RUN mkdir -p /etc/NetworkManager/system-connections
 COPY dns-test0.nmconnection /etc/NetworkManager/system-connections/dns-test0.nmconnection
